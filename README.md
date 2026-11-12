@@ -124,7 +124,9 @@ theme's icon choice are embedded in the binary; themes are installed into
 `omarchy-theme-backgrounds` package below, or from **Download backgrounds** in
 the picker (`cinnarchy fetch --backgrounds` on the command line).
 
-Developed and tested on Debian 13 / LMDE 7 with Cinnamon 6.6 and Qt 6.8.
+Developed and tested in X11 sessions on two systems: Cinnamon 6.6 with Qt 6.12,
+and Debian 13 with Cinnamon 6.4 and Qt 6.8. The Debian steps below also apply
+to LMDE 7, which shares Debian 13's packages.
 
 ```sh
 git clone https://github.com/CyberJody/cinnarchy.git
