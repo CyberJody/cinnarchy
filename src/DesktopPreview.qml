@@ -8,12 +8,13 @@ Rectangle {
     property string fit: "zoom"
     property var media: ({})
     property bool playAnimations: true
+    property real speed: 1
     color: colors.bg
     clip: true
     MediaBackdrop {
         anchors.fill: parent
         source: root.wallpaper
-        media: root.media; fit: root.fit; playing: root.playAnimations
+        media: root.media; fit: root.fit; playing: root.playAnimations; speed: root.speed
     }
     Rectangle {
         anchors.top: parent.top; width: parent.width; height: 29

@@ -316,6 +316,83 @@ private slots:
         QVERIFY2(spanned.value("spanning").toBool(),qPrintable(problem));
         QCOMPARE(QImage(QUrl(spanned.value("poster").toString()).toLocalFile()).size(),QSize(640,180));
     }
+    void playbackSpeedAndRepeatFollowEachDisplay() {
+        Fixture f;auto second=f.paths.displayOverrides.first().toMap();second["id"]="Test-2";second["x"]=320;f.paths.displayOverrides<<second;
+        const auto video=f.dir.filePath("clip.mp4");
+        QProcess ffmpeg;ffmpeg.start("ffmpeg",{"-nostdin","-v","error","-f","lavfi","-i","testsrc2=size=96x64:rate=5:duration=1","-threads","1","-y",video});QVERIFY(ffmpeg.waitForFinished(10000));QCOMPARE(ffmpeg.exitCode(),0);
+        Backend b(nullptr,f.paths,&f.settings);QCOMPARE(b.playbackSpeed(),1.0);QCOMPARE(b.replayDelay(),0);
+        b.setTargetDisplay("Test-2");b.addMedia({QUrl::fromLocalFile(video).toString()});
+        b.setPlaybackSpeed(0.5);b.setReplayDelay(30);b.setPlaybackSpeed(0);b.setPlaybackSpeed(9);b.setReplayDelay(-7);
+        QCOMPARE(b.playbackSpeed(),0.5);QCOMPARE(b.replayDelay(),30);
+        // Nothing is playing yet, so nothing reaches the desktop before Apply.
+        QVERIFY(Wallpapers::read(Wallpapers::configurationPath(f.paths.stateRoot)).isEmpty());
+        QVERIFY2(b.applyNow(),qPrintable(b.message()));
+        auto config=Wallpapers::read(Wallpapers::configurationPath(f.paths.stateRoot));auto choices=config.value("assignments").toObject();
+        QCOMPARE(choices.value("Test-2").toObject().value("speed").toDouble(),0.5);QCOMPARE(choices.value("Test-2").toObject().value("replay").toInt(),30);
+        QVERIFY(!choices.value("Test-1").toObject().contains("speed"));QVERIFY(!choices.value("Test-1").toObject().contains("replay"));
+        b.setTargetDisplay("Test-1");QCOMPARE(b.playbackSpeed(),1.0);QCOMPARE(b.replayDelay(),0);
+        b.setTargetDisplay("Test-2");QCOMPARE(b.playbackSpeed(),0.5);QCOMPARE(b.replayDelay(),30);
+        // A playing background follows a change at once: same still poster, no new Undo step.
+        const auto poster=config.value("poster").toString();const auto applied=f.settings.values;
+        b.setReplayDelay(-1);b.setPlaybackSpeed(2);
+        config=Wallpapers::read(Wallpapers::configurationPath(f.paths.stateRoot));choices=config.value("assignments").toObject();
+        QCOMPARE(choices.value("Test-2").toObject().value("speed").toDouble(),2.0);QCOMPARE(choices.value("Test-2").toObject().value("replay").toInt(),-1);
+        QCOMPARE(config.value("poster").toString(),poster);QCOMPARE(f.settings.values,applied);QVERIFY(b.hasAnimations());
+        b.setPlaybackSpeed(1);b.setReplayDelay(0);
+        QVERIFY(!Wallpapers::read(Wallpapers::configurationPath(f.paths.stateRoot)).value("assignments").toObject().value("Test-2").toObject().contains("speed"));
+        // A reopened picker shows what is playing, and one Undo returns to before the theme.
+        b.setPlaybackSpeed(1.5);{Backend again(nullptr,f.paths,&f.settings);again.setTargetDisplay("Test-2");QCOMPARE(again.playbackSpeed(),1.5);}
+        QVERIFY(b.undoNow());QVERIFY(!b.canUndo());QVERIFY(!b.hasAnimations());
+    }
+    void videoControlsAppearForAnimatedBackgroundsOnly() {
+        Fixture f;const auto video=f.dir.filePath("clip.mp4");
+        QProcess ffmpeg;ffmpeg.start("ffmpeg",{"-nostdin","-v","error","-f","lavfi","-i","testsrc2=size=96x64:rate=5:duration=1","-threads","1","-y",video});QVERIFY(ffmpeg.waitForFinished(10000));QCOMPARE(ffmpeg.exitCode(),0);
+        Backend b(nullptr,f.paths,&f.settings);Theme theme(f.dir.filePath("current"));Translator translator(f.dir.filePath("language"));
+        QQmlApplicationEngine engine;QStringList warnings;connect(&engine,&QQmlEngine::warnings,this,[&](const QList<QQmlError>& errors){for(const auto&e:errors)warnings<<e.toString();});
+        engine.rootContext()->setContextProperty("backend",&b);engine.rootContext()->setContextProperty("theme",&theme);engine.rootContext()->setContextProperty("translator",&translator);
+        engine.load(QUrl("qrc:/Main.qml"));QVERIFY(!engine.rootObjects().isEmpty());
+        auto *window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());QVERIFY(window);QTest::qWait(200);
+        auto item=[&](const char*name){return window->findChild<QQuickItem*>(name);};
+        QVERIFY(item("playbackControls"));QVERIFY(!item("playbackControls")->isVisible());
+        b.addMedia({QUrl::fromLocalFile(video).toString()});QTRY_VERIFY(item("playbackControls")->isVisible());
+        QCOMPARE(item("speedCombo")->property("currentText").toString(),QString("Normal"));QCOMPARE(item("repeatCombo")->property("currentText").toString(),QString("Right away"));
+        // The lists show the backend's choice and change it.
+        b.setPlaybackSpeed(0.5);b.setReplayDelay(-1);
+        QTRY_COMPARE(item("speedCombo")->property("currentText").toString(),QString("0.5×"));QTRY_COMPARE(item("repeatCombo")->property("currentText").toString(),QString("Never (play once)"));
+        item("speedCombo")->forceActiveFocus(Qt::TabFocusReason);QTest::keyClick(window,Qt::Key_Down);QTRY_COMPARE(b.playbackSpeed(),0.75);
+        item("repeatCombo")->forceActiveFocus(Qt::TabFocusReason);QTest::keyClick(window,Qt::Key_Up);QTRY_COMPARE(b.replayDelay(),3600);
+        b.selectWallpaper(0);QTRY_VERIFY(!item("playbackControls")->isVisible());
+        QVERIFY2(warnings.isEmpty(),qPrintable(warnings.join('\n')));window->close();
+    }
+    void pausedLoopsRestartOnARealPlayer() {
+        if(QStandardPaths::findExecutable("mpv").isEmpty())QSKIP("mpv is not installed");
+        QTemporaryDir dir("/tmp/cinnarchy-test-XXXXXX");const auto video=dir.filePath("clip.mp4"),socket=dir.filePath("mpv.sock");
+        QProcess ffmpeg;ffmpeg.start("ffmpeg",{"-nostdin","-v","error","-f","lavfi","-i","testsrc2=size=96x64:rate=10:duration=1","-threads","1","-y",video});QVERIFY(ffmpeg.waitForFinished(10000));QCOMPARE(ffmpeg.exitCode(),0);
+        // The desktop player's own options, without a window: double speed, one second of rest.
+        Playback playback;playback.speed=2;playback.replay=1;QCOMPARE(playback.arguments(),(QStringList{"--speed=2.00","--loop-file=no"}));
+        QProcess mpv;mpv.start("mpv",QStringList{"--no-config","--load-scripts=no","--no-audio","--vo=null","--msg-level=all=warn","--keep-open=yes","--input-ipc-server="+socket}+playback.arguments()+QStringList{"--",video});
+        QVERIFY(mpv.waitForStarted(5000));QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(socket),5000);
+        auto property=[&](const char *name){return Wallpapers::player(socket,{"get_property",name}).value("data");};
+        QTRY_COMPARE_WITH_TIMEOUT(property("speed").toDouble(),2.0,3000);
+        PlaybackLoop loop;loop.configure(socket,playback,false);
+        // One second of video at double speed ends within the second, rests, then starts over.
+        QElapsedTimer clock;clock.start();qint64 ended=-1,restarted=-1;
+        while(clock.elapsed()<6000&&restarted<0){loop.advance(false);const bool end=property("eof-reached").toBool();
+            if(end&&ended<0)ended=clock.elapsed();if(!end&&ended>=0)restarted=clock.elapsed();QTest::qWait(50);}
+        QVERIFY2(ended>=0&&ended<1500,qPrintable(QString::number(ended)));QVERIFY2(restarted>=0,"the video never repeated");
+        QVERIFY2(restarted-ended>=900&&restarted-ended<2500,qPrintable(QString::number(restarted-ended)));
+        // While paused by the user, a rest that runs out waits; resuming repeats at once.
+        QTRY_VERIFY_WITH_TIMEOUT(property("eof-reached").toBool(),3000);loop.advance(true);QVERIFY(loop.resting());
+        QTest::qWait(1300);loop.advance(true);QVERIFY(property("eof-reached").toBool());
+        loop.advance(false);QTRY_VERIFY_WITH_TIMEOUT(!property("eof-reached").toBool(),1000);
+        // Play once: it stays on its last frame.
+        playback.replay=-1;loop.configure(socket,playback,true);QTRY_VERIFY_WITH_TIMEOUT(property("eof-reached").toBool(),3000);
+        for(int i=0;i<12;++i){loop.advance(false);QTest::qWait(100);}QVERIFY(property("eof-reached").toBool());QVERIFY(loop.resting());
+        // Back to continuous at normal speed while resting: it carries on and no longer stops at the end.
+        playback=Playback();loop.configure(socket,playback,true);QCOMPARE(property("speed").toDouble(),1.0);QCOMPARE(property("loop-file").toString(),QString("inf"));
+        for(int i=0;i<25;++i){loop.advance(false);QVERIFY(!property("eof-reached").toBool());QTest::qWait(100);}
+        mpv.kill();mpv.waitForFinished(3000);
+    }
     void catalogAndSafeInstallation() {
         Fixture f;Backend b(nullptr,f.paths,&f.settings);QCOMPARE(b.themes().size(),23);
         b.selectTheme("tokyo-night");QCOMPARE(b.selected().value("wallpapers").toList().size(),2);

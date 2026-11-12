@@ -45,6 +45,8 @@ class Backend : public QObject {
     Q_PROPERTY(bool useWallpaper READ useWallpaper WRITE setUseWallpaper NOTIFY optionsChanged)
     Q_PROPERTY(bool useIcons READ useIcons WRITE setUseIcons NOTIFY optionsChanged)
     Q_PROPERTY(QString pictureOption READ pictureOption WRITE setPictureOption NOTIFY optionsChanged)
+    Q_PROPERTY(double playbackSpeed READ playbackSpeed WRITE setPlaybackSpeed NOTIFY optionsChanged)
+    Q_PROPERTY(int replayDelay READ replayDelay WRITE setReplayDelay NOTIFY optionsChanged)
     Q_PROPERTY(QVariantList displays READ displays NOTIFY displaysChanged)
     Q_PROPERTY(QString targetDisplay READ targetDisplay WRITE setTargetDisplay NOTIFY selectionChanged)
     Q_PROPERTY(QVariantMap wallpaperMedia READ wallpaperMedia NOTIFY selectionChanged)
@@ -103,6 +105,12 @@ public:
     void setUseWallpaper(bool v) { m_useWallpaper=v; emit optionsChanged(); }
     void setUseIcons(bool v) { m_useIcons=v; emit optionsChanged(); }
     void setPictureOption(const QString &v);
+    // Speed and repeat of the targeted displays' animated background. A background that is
+    // already playing follows at once; otherwise they take effect with the next Apply.
+    double playbackSpeed() const { return m_playback.speed; }
+    int replayDelay() const { return m_playback.replay; }
+    void setPlaybackSpeed(double speed);
+    void setReplayDelay(int seconds);
     Q_INVOKABLE void selectTheme(const QString &slug);
     Q_INVOKABLE void selectWallpaper(int index);
     Q_INVOKABLE void reload();
@@ -157,6 +165,9 @@ private:
     FilePicker *m_picker=nullptr;
     QPointer<QWindow> m_window;
     void chooseUrl(const QString &url);
+    void storePlayback();
+    QJsonObject withPlayback(QJsonObject choice) const;
+    Playback m_playback;
     void syncSelection();
     QJsonObject currentConfiguration() const;
 };

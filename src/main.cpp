@@ -24,7 +24,7 @@ int main(int argc,char **argv) {
     const bool gui=raw.isEmpty() || raw.first()=="open" || raw.first()=="wallpaper-service";
     if(!gui) {qputenv("QT_QPA_PLATFORM","offscreen");qputenv("QT_QUICK_BACKEND","software");}
     QGuiApplication app(argc,argv);
-    app.setApplicationName("cinnarchy");app.setApplicationVersion("1.2.1");app.setOrganizationName("Cinnarchy");
+    app.setApplicationName("cinnarchy");app.setApplicationVersion("1.3.0");app.setOrganizationName("Cinnarchy");
     app.setDesktopFileName("cinnarchy");app.setWindowIcon(QIcon(":/cinnarchy.svg"));
     QQuickStyle::setStyle("Material");
     QCommandLineParser parser;
@@ -43,6 +43,8 @@ int main(int argc,char **argv) {
     parser.addOption({"display","Wallpaper target: all or a display connector ID","id","all"});
     parser.addOption({"file","Use a local image or animated background","path"});
     parser.addOption({"screen-background","Set DISPLAY=/path/to/image-or-video; repeat for multiple displays","assignment"});
+    parser.addOption({"speed","apply: animated background speed from 0.25 to 4; 1 is normal","factor"});
+    parser.addOption({"repeat-after","apply: seconds an animated background rests before repeating; 0 loops at once, 'once' plays a single time","seconds"});
     parser.addOption({"layout","Read a display layout JSON array for isolated testing","path"});
     parser.addOption({"url","fetch: install a community theme from its git repository","git-url"});
     parser.addOption({"community","fetch: list the community themes on omarchy.org"});
@@ -113,6 +115,13 @@ int main(int argc,char **argv) {
         bool success=false;
         if(command=="apply") {
             const auto slug=args.value(1);
+            bool speedValid=true,repeatValid=true;
+            const double speed=parser.isSet("speed")?parser.value("speed").toDouble(&speedValid):1.0;
+            const int repeat=!parser.isSet("repeat-after")?0:parser.value("repeat-after")=="once"?-1:parser.value("repeat-after").toInt(&repeatValid);
+            if(!speedValid||!Playback::validSpeed(speed)||!repeatValid||!Playback::validReplay(repeat)||(parser.isSet("repeat-after")&&repeat<0&&parser.value("repeat-after")!="once")) {
+                std::fprintf(stderr,"Use --speed 0.25 to 4 and --repeat-after SECONDS or 'once'\n");return 1;
+            }
+            auto tune=[&]{if(parser.isSet("speed"))backend.setPlaybackSpeed(speed);if(parser.isSet("repeat-after"))backend.setReplayDelay(repeat);};
             if(parser.isSet("screen-background")){const auto first=parser.values("screen-background").first();backend.setTargetDisplay(first.left(first.indexOf('=')));}
             backend.selectTheme(slug);
             bool valid=false;const int index=parser.value("background").toInt(&valid)-1;
@@ -122,8 +131,9 @@ int main(int argc,char **argv) {
             for(const auto &assignment:parser.values("screen-background")){
                 const int split=assignment.indexOf('=');const auto id=assignment.left(split);backend.setTargetDisplay(id);
                 if(split<1||backend.targetDisplay()!=id){std::fprintf(stderr,"Invalid display assignment\n");return 1;}
-                backend.addMedia({QUrl::fromLocalFile(QFileInfo(assignment.mid(split+1)).absoluteFilePath()).toString()});
+                backend.addMedia({QUrl::fromLocalFile(QFileInfo(assignment.mid(split+1)).absoluteFilePath()).toString()});tune();
             }
+            if(!parser.isSet("screen-background"))tune();
             if(backend.error())success=false;else success=backend.applyNow();
         } else if(command=="undo") success=backend.undoNow();
         else if(command=="redo") success=backend.redoNow();

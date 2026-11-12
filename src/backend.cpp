@@ -207,15 +207,48 @@ void Backend::setPictureOption(const QString &v) {
     for(const auto &s:m_displays){const auto id=s.toMap().value("id").toString();if(m_target!="all"&&m_target!=id)continue;auto choice=m_assignments.value(id).toObject();choice["fit"]=v;if(v=="spanned")choice["url"]=m_selectedUrl;m_assignments[id]=choice;}
     emit optionsChanged();emit selectionChanged();
 }
+QJsonObject Backend::withPlayback(QJsonObject choice) const {
+    // Only non-default choices are written, so ordinary configurations stay as they were.
+    if(m_playback.speed==1.0)choice.remove("speed");else choice["speed"]=m_playback.speed;
+    if(m_playback.replay==0)choice.remove("replay");else choice["replay"]=m_playback.replay;
+    return choice;
+}
+void Backend::setPlaybackSpeed(double speed) {
+    if(!Playback::validSpeed(speed)||speed==m_playback.speed)return;
+    m_playback.speed=speed;storePlayback();
+}
+void Backend::setReplayDelay(int seconds) {
+    if(!Playback::validReplay(seconds)||seconds==m_playback.replay)return;
+    m_playback.replay=seconds;storePlayback();
+}
+void Backend::storePlayback() {
+    QStringList targets;
+    for(const auto &s:m_displays){const auto id=s.toMap().value("id").toString();if(m_target=="all"||m_target==id)targets<<id;}
+    for(const auto &id:targets){const auto choice=m_assignments.value(id).toObject();if(!choice.isEmpty())m_assignments[id]=withPlayback(choice);}
+    emit optionsChanged();
+    // A background that is playing on the desktop right now follows at once, like Pause.
+    auto config=currentConfiguration();
+    if(!config.value("active").toBool()||!config.value("animated").toBool())return;
+    auto live=config.value("assignments").toObject();bool changed=false;
+    for(const auto &id:targets) {
+        const auto choice=live.value(id).toObject();
+        if(choice.isEmpty()||choice.value("url")!=m_assignments.value(id).toObject().value("url"))continue;
+        const auto tuned=withPlayback(choice);if(tuned!=choice){live[id]=tuned;changed=true;}
+    }
+    if(!changed)return;
+    config["assignments"]=live;QString error;
+    if(!Wallpapers::activate(config,m_paths.stateRoot,m_paths.wallpaperRuntime,error)){fail(error);return;}
+    emit stateChanged();
+}
 void Backend::chooseUrl(const QString &url) {
     m_selectedUrl=url;
-    for(const auto &s:m_displays){const auto id=s.toMap().value("id").toString();if(m_target=="all"||m_target==id)m_assignments[id]=QJsonObject{{"url",url},{"fit",m_pictureOption}};}
+    for(const auto &s:m_displays){const auto id=s.toMap().value("id").toString();if(m_target=="all"||m_target==id)m_assignments[id]=withPlayback(QJsonObject{{"url",url},{"fit",m_pictureOption}});}
     syncSelection();
 }
 void Backend::syncSelection() {
     const auto id=m_target=="all"?m_displays.value(0).toMap().value("id").toString():m_target;
     const auto choice=m_assignments.value(id).toObject();
-    if(!choice.value("url").toString().isEmpty())m_selectedUrl=choice.value("url").toString();
+    if(!choice.value("url").toString().isEmpty()){m_selectedUrl=choice.value("url").toString();m_playback=Playback::from(choice);}
     m_pictureOption=choice.value("fit").toString(m_pictureOption);m_wallpaperIndex=-1;
     const auto list=selected().value("wallpapers").toList();for(int i=0;i<list.size();++i)if(list[i].toMap().value("url").toString()==m_selectedUrl)m_wallpaperIndex=i;
     emit selectionChanged();emit optionsChanged();

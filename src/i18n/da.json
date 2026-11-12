@@ -145,5 +145,19 @@
   "'%1' is not a repository URL.": "'%1' er ikke en repository-URL.",
   "'%1' does not give a usable theme name.": "'%1' giver ikke et brugbart temanavn.",
   "git failed: %1": "git mislykkedes: %1",
-  "%1 has no usable colors.toml or alacritty.toml.": "%1 har ingen brugbar colors.toml eller alacritty.toml."
+  "%1 has no usable colors.toml or alacritty.toml.": "%1 har ingen brugbar colors.toml eller alacritty.toml.",
+  "Speed": "Hastighed",
+  "Normal": "Normal",
+  "Animation speed": "Animationshastighed",
+  "Repeat": "Gentagelse",
+  "Repeat the animation": "Gentag animationen",
+  "Right away": "Med det samme",
+  "After 5 seconds": "Efter 5 sekunder",
+  "After 15 seconds": "Efter 15 sekunder",
+  "After 30 seconds": "Efter 30 sekunder",
+  "After 1 minute": "Efter 1 minut",
+  "After 5 minutes": "Efter 5 minutter",
+  "After 15 minutes": "Efter 15 minutter",
+  "After 1 hour": "Efter 1 time",
+  "Never (play once)": "Aldrig (afspil én gang)"
 }

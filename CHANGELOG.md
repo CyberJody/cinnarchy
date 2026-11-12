@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0 — 2026-11-12
+
+- Video controls for animated backgrounds: **Speed** from 0.25× to 2× and
+  **Repeat**, which rests the animation on its last frame for 5 seconds up to
+  an hour between loops, or plays it once. Each display keeps its own choice,
+  a playing background changes at once, and the preview follows the speed.
+  `cinnarchy apply` accepts `--speed` and `--repeat-after`.
+- After an upgrade, a live wallpaper started by the older version is handed
+  over to the new player the next time it is changed.
+
 ## 1.2.1 — 2026-11-12
 
 - Works without Omarchy installed: **Download backgrounds** fetches a built-in

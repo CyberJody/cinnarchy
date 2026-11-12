@@ -33,7 +33,7 @@ jobs:
             qml6-module-qtquick-templates qml6-module-qtquick-window \
             qml6-module-qtqml-workerscript qml6-module-qtmultimedia \
             libglib2.0-dev libx11-dev libxrandr-dev libxext-dev \
-            ffmpeg python3 python3-gi gir1.2-gtk-3.0 xvfb xauth
+            ffmpeg mpv python3 python3-gi gir1.2-gtk-3.0 xvfb xauth
           # Plugin packages whose names differ between releases.
           for package in qt6-qpa-plugins qt6-svg-plugins qt6-image-formats-plugins; do
             apt-get install -y --no-install-recommends "$package" || echo "::notice::$package is not packaged here"

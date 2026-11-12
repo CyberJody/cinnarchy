@@ -203,7 +203,7 @@ ApplicationWindow {
                             id: preview; objectName: "desktopPreview"
                             Layout.fillWidth: true; Layout.fillHeight: true; Layout.minimumHeight: 170; Layout.preferredHeight: 300
                             colors: win.paletteColors; wallpaper: backend.wallpaperUrl; fit: backend.pictureOption
-                            media: backend.wallpaperMedia; playAnimations: !backend.animationsPaused
+                            media: backend.wallpaperMedia; playAnimations: !backend.animationsPaused; speed: backend.playbackSpeed
                         }
                         RowLayout {
                             Layout.fillWidth: true
@@ -271,6 +271,31 @@ ApplicationWindow {
                                     ToolTip.visible: hovered; ToolTip.delay: 400; ToolTip.text: qsTr("Download the backgrounds of every built-in theme (about 170 MB)") }
                             }
                         }
+                        // How the chosen video, GIF or animated WebP plays on the desktop.
+                        RowLayout {
+                            objectName: "playbackControls"
+                            Layout.fillWidth: true; spacing: 10; visible: !!backend.wallpaperMedia.animated
+                            Label { text: qsTr("Speed"); color: "#92a0af"; font.pixelSize: 12 }
+                            ComboBox {
+                                id: speedCombo; objectName: "speedCombo"; Layout.preferredWidth: 118; font.pixelSize: 12
+                                property var options: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2]
+                                model: ["0.25×", "0.5×", "0.75×", qsTr("Normal"), "1.25×", "1.5×", "2×"]
+                                currentIndex: Math.max(0, options.indexOf(backend.playbackSpeed))
+                                onActivated: backend.playbackSpeed = options[currentIndex]
+                                Accessible.name: qsTr("Animation speed")
+                            }
+                            Label { text: qsTr("Repeat"); color: "#92a0af"; font.pixelSize: 12; Layout.leftMargin: 8 }
+                            ComboBox {
+                                id: repeatCombo; objectName: "repeatCombo"; Layout.preferredWidth: 196; font.pixelSize: 12
+                                property var options: [0, 5, 15, 30, 60, 300, 900, 3600, -1]
+                                model: [qsTr("Right away"), qsTr("After 5 seconds"), qsTr("After 15 seconds"), qsTr("After 30 seconds"), qsTr("After 1 minute"),
+                                        qsTr("After 5 minutes"), qsTr("After 15 minutes"), qsTr("After 1 hour"), qsTr("Never (play once)")]
+                                currentIndex: Math.max(0, options.indexOf(backend.replayDelay))
+                                onActivated: backend.replayDelay = options[currentIndex]
+                                Accessible.name: qsTr("Repeat the animation")
+                            }
+                            Label { Layout.fillWidth: true; text: qsTr("Animated backgrounds loop silently and resume at login."); color: "#94a1af"; font.pixelSize: 11; wrapMode: Text.Wrap; maximumLineCount: 2; elide: Text.ElideRight }
+                        }
                         Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: "#29323d" }
                         RowLayout {
                             Layout.fillWidth: true; spacing: 10
@@ -284,7 +309,6 @@ ApplicationWindow {
                             Layout.fillWidth: true; text: qsTr("Desktop · Applications · Window borders · %1").arg(win.chosen.icons || qsTr("No icon pack"))
                             color: "#94a1af"; font.pixelSize: 11; wrapMode: Text.Wrap
                         }
-                        Label { Layout.fillWidth: true; visible: !!backend.wallpaperMedia.animated; text: qsTr("Animated backgrounds loop silently and resume at login."); color: "#94a1af"; font.pixelSize: 11; wrapMode: Text.Wrap }
                         Label { Layout.fillWidth: true; visible: (win.chosen.iconNote || "") !== "" && backend.useIcons; text: win.chosen.iconNote || ""; color: "#edc68c"; font.pixelSize: 11; wrapMode: Text.Wrap }
                     }
                 }

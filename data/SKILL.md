@@ -16,6 +16,8 @@ Use `--file /path/to/image-or-video` to choose a local background.
 Use repeated `--screen-background CONNECTOR=/path/to/file` to assign different files.
 GIF, animated WebP and video files loop silently on X11 Cinnamon.
 Use `--fit zoom|scaled|spanned|centered` for sizing; span requires all displays.
+Use `--speed 0.25..4` and `--repeat-after SECONDS|once` to slow down an animated
+background or rest it between loops (`0` loops at once, `once` plays a single time).
 Use `cinnarchy pause --json` to toggle playback, or `cinnarchy stop-animation --json`
 to leave static poster images. Normal Cinnamon background changes stop playback.
 

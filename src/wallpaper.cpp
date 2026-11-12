@@ -152,7 +152,9 @@ QJsonObject Wallpapers::prepare(const QVariantList &screens,const QJsonObject &a
         posterScreens={QVariantMap{{"id",id},{"x",bounds.x()},{"y",bounds.y()},{"width",bounds.width()},{"height",bounds.height()}}};
     }
     const auto image=compose(posterScreens,posterAssignments,stateRoot,error);if(image.isNull())return {};
-    const auto key=QCryptographicHash::hash(QJsonDocument(QJsonObject{{"screens",QJsonArray::fromVariantList(screens)},{"assignments",assignments}}).toJson(QJsonDocument::Compact),QCryptographicHash::Sha256).toHex().left(24);
+    // The still poster depends on what is shown where, not on how a video plays.
+    QJsonObject shown;for(auto it=assignments.begin();it!=assignments.end();++it)shown[it.key()]=QJsonObject{{"url",it.value().toObject().value("url")},{"fit",it.value().toObject().value("fit")}};
+    const auto key=QCryptographicHash::hash(QJsonDocument(QJsonObject{{"screens",QJsonArray::fromVariantList(screens)},{"assignments",shown}}).toJson(QJsonDocument::Compact),QCryptographicHash::Sha256).toHex().left(24);
     const QString path=stateRoot+"/wallpapers/"+QString::fromLatin1(key)+".png";QDir().mkpath(QFileInfo(path).absolutePath());
     QSaveFile file(path);if(!file.open(QIODevice::WriteOnly)||!image.save(&file,"PNG")||!file.commit()){error=QObject::tr("Cannot save the combined desktop background.");return {};}
     return {{"version",1},{"active",true},{"animated",animated},{"paused",false},
@@ -174,6 +176,18 @@ bool Wallpapers::activate(const QJsonObject &config,const QString &root,bool run
     if(!runtime)return true;
     const bool active=config.value("active").toBool();
     auto response=request(root,{{"action","reload"}},10000);
+    if(active&&!response.isEmpty()&&response.value("version").toString()!=QCoreApplication::applicationVersion()) {
+        // A player left running by another version of the picker (an upgrade while a live
+        // wallpaper was on) would ignore newer settings. It quits on an inactive
+        // configuration, so let it wind down and start this version's in its place.
+        auto idle=config;idle["active"]=false;
+        if(!save(configurationPath(root),idle,error))return false;
+        request(root,{{"action","reload"}},3000);
+        QElapsedTimer leaving;leaving.start();
+        while(leaving.elapsed()<4000&&!request(root,{{"action","status"}},300).isEmpty())QThread::msleep(100);
+        if(!save(configurationPath(root),config,error))return false;
+        response={};
+    }
     if(response.isEmpty()&&active) {
         QProcess process;auto env=QProcessEnvironment::systemEnvironment();env.remove("QT_QPA_PLATFORM");env.remove("QT_QUICK_BACKEND");
         process.setProcessEnvironment(env);process.setProgram(QCoreApplication::applicationFilePath());process.setArguments({"wallpaper-service","--state-dir",root});
@@ -187,11 +201,18 @@ bool Wallpapers::activate(const QJsonObject &config,const QString &root,bool run
 }
 
 namespace {
+QJsonObject mpvCommand(const QString &socket,const QJsonArray &command,int timeout=500);
 struct LiveWindow {
-    Window window=0;QProcess process;QString socket,path,fit;QRect geometry;QByteArray stderrTail;
+    Window window=0;QProcess process;QString socket,path,fit,screen;QRect geometry;QByteArray stderrTail;PlaybackLoop loop;
     ~LiveWindow(){process.kill();process.waitForFinished(1500);}
 };
-QJsonObject mpvCommand(const QString &socket,const QJsonArray &command,int timeout=500) {
+// What decides which players exist; speed, repeat and pause are changed on running ones.
+QJsonObject withoutPlayback(QJsonObject config) {
+    config.remove("paused");auto assignments=config.value("assignments").toObject();
+    for(auto it=assignments.begin();it!=assignments.end();++it){auto choice=it.value().toObject();choice.remove("speed");choice.remove("replay");it.value()=choice;}
+    config["assignments"]=assignments;return config;
+}
+QJsonObject mpvCommand(const QString &socket,const QJsonArray &command,int timeout) {
     QLocalSocket connection;connection.connectToServer(socket);if(!connection.waitForConnected(timeout))return {};
     connection.write(QJsonDocument(QJsonObject{{"command",command},{"request_id",7}}).toJson(QJsonDocument::Compact)+'\n');connection.flush();
     QElapsedTimer timer;timer.start();QByteArray buffer;
@@ -211,10 +232,13 @@ class DesktopService:public QObject {
     bool load() {
         const auto next=Wallpapers::read(Wallpapers::configurationPath(root));const auto sig=QJsonDocument(next).toJson(QJsonDocument::Compact);
         if(sig==signature)return error.isEmpty();
-        auto same=next,previous=config;same.remove("paused");previous.remove("paused");
-        if(same==previous&&!windows.empty()) {
-            for(auto &w:windows)mpvCommand(w->socket,{"set_property","pause",next.value("paused").toBool()});
-            config=next;signature=sig;return error.isEmpty();
+        if(withoutPlayback(next)==withoutPlayback(config)&&!windows.empty()) {
+            config=next;signature=sig;
+            for(auto &w:windows) {
+                w->loop.configure(w->socket,Playback::from(config.value("assignments").toObject().value(w->screen).toObject()),true);
+                mpvCommand(w->socket,{"set_property","pause",config.value("paused").toBool()});
+            }
+            return error.isEmpty();
         }
         clear();config=next;signature=sig;error.clear();externalChange.invalidate();
         if(!config.value("active").toBool())return true;
@@ -224,6 +248,7 @@ class DesktopService:public QObject {
             const auto screen=s.toMap();const auto choice=config.value("assignments").toObject().value(screen.value("id").toString()).toObject();
             const auto path=mediaPath(choice);if(!Wallpapers::isAnimated(path))continue;
             auto live=std::make_unique<LiveWindow>();live->path=path;live->fit=choice.value("fit").toString("zoom");live->geometry=rect(screen);
+            live->screen=screen.value("id").toString();const auto playback=Playback::from(choice);
             if(config.value("spanning").toBool())live->geometry=desktopBounds;
             auto g=live->geometry;live->window=XCreateSimpleWindow(display,DefaultRootWindow(display),g.x(),g.y(),g.width(),g.height(),0,0,0);
             Atom type=XInternAtom(display,"_NET_WM_WINDOW_TYPE_DESKTOP",False),property=XInternAtom(display,"_NET_WM_WINDOW_TYPE",False);
@@ -246,9 +271,10 @@ class DesktopService:public QObject {
             const auto xDisplay=environment.value("DISPLAY");
             if(xDisplay.startsWith(':'))environment.insert("DISPLAY","unix/"+xDisplay);
             live->process.setProcessEnvironment(environment);
-            QStringList args{"--no-config","--load-scripts=no","--no-audio","--no-osc","--no-osd-bar","--osd-level=0","--msg-level=all=warn","--input-terminal=no","--input-default-bindings=no","--input-vo-keyboard=no","--cursor-autohide=always","--loop-file=inf","--keep-open=yes","--vo=gpu-next,gpu,x11","--x11-present=no","--hwdec=auto-safe","--wid="+QString::number(live->window),"--input-ipc-server="+live->socket};
+            QStringList args{"--no-config","--load-scripts=no","--no-audio","--no-osc","--no-osd-bar","--osd-level=0","--msg-level=all=warn","--input-terminal=no","--input-default-bindings=no","--input-vo-keyboard=no","--cursor-autohide=always","--keep-open=yes","--vo=gpu-next,gpu,x11","--x11-present=no","--hwdec=auto-safe","--wid="+QString::number(live->window),"--input-ipc-server="+live->socket};
             args<<"--panscan="+QString(live->fit=="zoom"||live->fit=="spanned"?"1":"0");
             if(live->fit=="centered")args<<"--video-unscaled=yes";
+            args<<playback.arguments();live->loop.configure(live->socket,playback,false);
             if(config.value("paused").toBool())args<<"--pause=yes";
             args<<"--"<<path;live->process.start(QStandardPaths::findExecutable("mpv"),args);
             if(!live->process.waitForStarted(1500)){error=tr("Cannot start mpv for %1.").arg(screen.value("id").toString());windows.push_back(std::move(live));break;}
@@ -285,7 +311,7 @@ public:
                 const auto message=QJsonDocument::fromJson(client->readLine()).object();const auto action=message.value("action").toString();
                 if(action=="reload")load();
                 if(action=="pause")for(auto &w:windows)mpvCommand(w->socket,{"set_property","pause",message.value("paused").toBool()});
-                client->write(QJsonDocument(QJsonObject{{"ok",error.isEmpty()},{"error",error},{"players",int(windows.size())},{"active",config.value("active")}}).toJson(QJsonDocument::Compact)+'\n');client->flush();client->disconnectFromServer();
+                client->write(QJsonDocument(QJsonObject{{"ok",error.isEmpty()},{"error",error},{"players",int(windows.size())},{"active",config.value("active")},{"version",QCoreApplication::applicationVersion()}}).toJson(QJsonDocument::Compact)+'\n');client->flush();client->disconnectFromServer();
             });connect(client,&QLocalSocket::disconnected,client,&QObject::deleteLater);
         }});
         load();poll.setInterval(400);connect(&poll,&QTimer::timeout,this,[this]{
@@ -318,12 +344,44 @@ public:
                 if(!problem.isEmpty()){error=problem;QString ignored;Wallpapers::save(root+"/wallpaper-status.json",{{"ok",false},{"error",error}},ignored);}
             }
             if(display){bool mapped=false;while(XPending(display)){XEvent event;XNextEvent(display,&event);mapped|=event.type==MapNotify;}if(mapped)lower();}
+            for(auto &w:windows)if(w->process.state()!=QProcess::NotRunning)w->loop.advance(config.value("paused").toBool());
             for(auto &w:windows)if(w->process.state()==QProcess::NotRunning){error=tr("An animated wallpaper player stopped.");QString ignored;Wallpapers::save(root+"/wallpaper-status.json",{{"ok",false},{"error",error}},ignored);}
         });poll.start();
     }
     ~DesktopService() override{clear();server.close();if(display)XCloseDisplay(display);}
 };
 }
+Playback Playback::from(const QJsonObject &choice) {
+    Playback playback;
+    const double speed=choice.value("speed").toDouble(1.0);const int replay=choice.value("replay").toInt(0);
+    if(validSpeed(speed))playback.speed=speed;
+    if(validReplay(replay))playback.replay=replay;
+    return playback;
+}
+QStringList Playback::arguments() const {
+    return {"--speed="+QString::number(speed,'f',2),QString("--loop-file=")+(replay==0?"inf":"no")};
+}
+QJsonObject Wallpapers::player(const QString &socket,const QJsonArray &command,int timeout) {return mpvCommand(socket,command,timeout);}
+
+void PlaybackLoop::configure(const QString &socket,const Playback &playback,bool running) {
+    m_socket=socket;m_playback=playback;
+    if(!running){m_resting=false;return;}
+    mpvCommand(socket,{"set_property","speed",playback.speed});
+    mpvCommand(socket,{"set_property","loop-file",playback.replay==0?"inf":"no"});
+    // Back to continuous looping while resting on the last frame: carry on now.
+    if(playback.replay==0&&m_resting)restart();
+}
+void PlaybackLoop::restart() {
+    mpvCommand(m_socket,{"seek",0,"absolute"});mpvCommand(m_socket,{"set_property","pause",false});m_resting=false;
+}
+void PlaybackLoop::advance(bool paused) {
+    if(m_socket.isEmpty()||m_playback.replay==0)return;
+    if(!mpvCommand(m_socket,{"get_property","eof-reached"},250).value("data").toBool()){m_resting=false;return;}
+    if(!m_resting){m_resting=true;m_ended.start();}
+    if(paused||m_playback.replay<0||m_ended.elapsed()<qint64(m_playback.replay)*1000)return;
+    restart();
+}
+
 int runWallpaperService(const QString &root) {
     QDir().mkpath(root);QLockFile lock(root+"/wallpaper-service.lock");if(!lock.tryLock(100))return 0;
     DesktopService service(root);return QCoreApplication::exec();

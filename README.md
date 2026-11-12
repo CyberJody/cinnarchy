@@ -34,6 +34,13 @@ with a play symbol. Videos and images can be mixed across monitors. When Qt uses
 renderer, video previews show a labeled still poster; desktop animation
 continues to use the separate player.
 
+With a video, GIF or animated WebP selected, **Speed** (0.25× to 2×) and
+**Repeat** appear under the thumbnails. Repeat sets how long the animation
+rests on its last frame before playing again: right away, after 5 seconds up to
+an hour, or never, which plays it once at login and leaves it still. Each
+display keeps its own choices. A background that is already playing follows a
+change at once; otherwise it takes effect with **Apply full theme**.
+
 Live wallpapers require an X11 Cinnamon session. The player sits behind
 desktop icons, ignores clicks, and continues when the picker closes.
 **Pause animation** freezes playback; **Stop animation** leaves static poster
@@ -131,7 +138,7 @@ python3 tests/gtk_desktop_regression.py
 The user installer places the binary in `~/.local/bin/cinnarchy`, with a
 Cinnamon menu entry and icon under your user data directory. It does not
 require administrator access. For an Arch package, `./bin/package` creates
-`pkgbuild/cinnarchy-1.2.1-1-x86_64.pkg.tar.zst`; `./bin/install` builds and
+`pkgbuild/cinnarchy-1.3.0-1-x86_64.pkg.tar.zst`; `./bin/install` builds and
 installs it through makepkg/pacman.
 
 ### Debian 13 (trixie)
@@ -193,6 +200,7 @@ cinnarchy fetch --community --json  # community themes listed on omarchy.org
 cinnarchy fetch --backgrounds --json  # Omarchy's backgrounds for built-in themes lacking them
 cinnarchy apply ethereal --screen-background DP-1=/path/to/photo.jpg \
   --screen-background HDMI-1=/path/to/video.mp4 --json
+cinnarchy apply ethereal --background 5 --speed 0.5 --repeat-after 30 --json
 cinnarchy pause --json              # toggle playback
 cinnarchy stop-animation --json
 cinnarchy undo --json
@@ -203,6 +211,9 @@ cinnarchy skill install
 
 Background numbers start at 1, in the order returned by `list`. Apply also
 accepts `--no-wallpaper`, `--no-icons` and `--fit zoom|scaled|spanned|centered`.
+For animated backgrounds, `--speed` takes 0.25 to 4 and `--repeat-after` the
+seconds to rest between loops, `0` to loop at once or `once` to play a single
+time.
 Connector IDs are returned by `status`; paths are local and originals are
 left in place. Span sizing requires the all-displays target.
 Commands return nonzero on failure. The optional agent skill is embedded and

@@ -7,6 +7,7 @@ Item {
     property string source: ""
     property string fit: "zoom"
     property bool playing: true
+    property real speed: 1
     readonly property bool stillVideoPreview: GraphicsInfo.api === GraphicsInfo.Software
     clip: true
     Image {
@@ -19,7 +20,7 @@ Item {
     }
     AnimatedImage {
         anchors.fill: parent; visible: root.media.mediaType === "animated-image"
-        source: visible ? root.source : ""; playing: root.playing && visible
+        source: visible ? root.source : ""; playing: root.playing && visible; speed: root.speed
         fillMode: root.fit === "scaled" || root.fit === "centered" ? Image.PreserveAspectFit : Image.PreserveAspectCrop
         asynchronous: true; cache: false
     }
@@ -28,7 +29,7 @@ Item {
         sourceComponent: Item {
             VideoOutput { id: output; anchors.fill: parent; fillMode: root.fit === "scaled" || root.fit === "centered" ? VideoOutput.PreserveAspectFit : VideoOutput.PreserveAspectCrop }
             MediaPlayer {
-                id: player; source: root.source; loops: MediaPlayer.Infinite; videoOutput: output
+                id: player; source: root.source; loops: MediaPlayer.Infinite; videoOutput: output; playbackRate: root.speed
                 audioOutput: AudioOutput { muted: true }
                 autoPlay: root.playing
                 onErrorOccurred: videoError.text = qsTr("Preview unavailable: %1").arg(errorString)
