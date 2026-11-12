@@ -31,7 +31,10 @@ Item {
             MediaPlayer {
                 id: player; source: root.source; loops: MediaPlayer.Infinite; videoOutput: output; playbackRate: root.speed
                 audioOutput: AudioOutput { muted: true }
-                autoPlay: root.playing
+                // Mint 22 ships Qt 6.4, before MediaPlayer gained autoPlay.
+                onMediaStatusChanged: {
+                    if (mediaStatus === MediaPlayer.LoadedMedia && root.playing) play()
+                }
                 onErrorOccurred: videoError.text = qsTr("Preview unavailable: %1").arg(errorString)
             }
             Connections { target: root; function onPlayingChanged() { if(root.playing)player.play();else player.pause() } }
