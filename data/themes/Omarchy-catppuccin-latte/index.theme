@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Catppuccin Latte
+Comment=Omarchy Catppuccin Latte for Cinnamon (light)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Catppuccin Latte
+GtkTheme=Omarchy-catppuccin-latte
+MetacityTheme=Omarchy-catppuccin-latte
+IconTheme=Adwaita
+CursorTheme=Adwaita

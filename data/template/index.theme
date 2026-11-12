@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · {{title}}
+Comment=Omarchy {{title}} for Cinnamon ({{mode}})
+
+[X-GNOME-Metatheme]
+Name=Omarchy · {{title}}
+GtkTheme={{name}}
+MetacityTheme={{name}}
+IconTheme=Adwaita
+CursorTheme=Adwaita

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Flexoki Light
+Comment=Omarchy Flexoki Light for Cinnamon (light)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Flexoki Light
+GtkTheme=Omarchy-flexoki-light
+MetacityTheme=Omarchy-flexoki-light
+IconTheme=Adwaita
+CursorTheme=Adwaita

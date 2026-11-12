@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Rosé Pine
+Comment=Omarchy Rosé Pine for Cinnamon (light)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Rosé Pine
+GtkTheme=Omarchy-rose-pine
+MetacityTheme=Omarchy-rose-pine
+IconTheme=Adwaita
+CursorTheme=Adwaita

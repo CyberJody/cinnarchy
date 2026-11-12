@@ -1,0 +1,45 @@
+name: Report a problem
+description: Something in the theme picker doesn't work as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. **Report a problem** in the picker
+        fills in the version and system fields for you.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead? Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Select the Nord theme
+        2. Click Apply full theme
+        3. ...
+  - type: input
+    id: version
+    attributes:
+      label: Cinnarchy version
+      description: Shown by `cinnarchy --version`.
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: System
+      description: Distribution, Cinnamon version, Qt version, X11 or Wayland, and the active theme.
+  - type: textarea
+    id: output
+    attributes:
+      label: Messages or command output
+      description: |
+        Any error message the picker showed, or output from `cinnarchy check --json`.
+        Command output can include paths in your home folder; remove anything you
+        don't want to share.
+      render: text

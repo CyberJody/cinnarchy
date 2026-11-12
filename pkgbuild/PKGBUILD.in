@@ -1,0 +1,26 @@
+pkgname=cinnarchy
+pkgver=1.2.0
+pkgrel=1
+pkgdesc='Omarchy full-theme picker for Cinnamon with wallpaper previews and undo'
+arch=('x86_64')
+url='https://github.com/CyberJody/cinnarchy'
+license=('GPL-2.0-or-later' 'MIT')
+depends=('qt6-base' 'qt6-declarative' 'qt6-svg' 'qt6-multimedia' 'glib2' 'cinnamon' 'libx11' 'libxrandr' 'libxext' 'mpv' 'ffmpeg' 'xdg-desktop-portal' 'git')
+makedepends=('gcc' 'make')
+optdepends=('omarchy: source wallpapers and palette icon choices' 'papirus-icon-theme: fallback matching icons')
+source=("cinnarchy-$pkgver.tar.gz")
+sha256sums=('@SHA256@')
+build() {
+  cd "$srcdir/cinnarchy-$pkgver"
+  ./bin/build
+}
+package() {
+  cd "$srcdir/cinnarchy-$pkgver"
+  install -Dm755 build/cinnarchy "$pkgdir/usr/bin/cinnarchy"
+  install -Dm644 pkgbuild/cinnarchy.desktop "$pkgdir/usr/share/applications/cinnarchy.desktop"
+  install -Dm644 pkgbuild/cinnarchy.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/cinnarchy.svg"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/cinnarchy/README.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/cinnarchy/LICENSE"
+  install -Dm644 COPYING "$pkgdir/usr/share/licenses/cinnarchy/COPYING"
+  install -Dm644 NOTICE "$pkgdir/usr/share/licenses/cinnarchy/NOTICE"
+}

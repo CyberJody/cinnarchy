@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Ethereal
+Comment=Omarchy Ethereal for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Ethereal
+GtkTheme=Omarchy-ethereal
+MetacityTheme=Omarchy-ethereal
+IconTheme=Adwaita
+CursorTheme=Adwaita

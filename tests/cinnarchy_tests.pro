@@ -1,0 +1,9 @@
+QT += core gui quick qml quickcontrols2 testlib dbus multimedia network
+CONFIG += c++17 testcase link_pkgconfig
+PKGCONFIG += gio-2.0 x11 xrandr xext
+TARGET = cinnarchy_tests
+TEMPLATE = app
+INCLUDEPATH += ../src
+HEADERS += ../src/backend.h ../src/settings.h ../src/theme.h ../src/translator.h ../src/wallpaper.h ../src/filepicker.h ../src/generator.h ../src/fetcher.h
+SOURCES += cinnarchy_tests.cpp ../src/backend.cpp ../src/settings.cpp ../src/theme.cpp ../src/translator.cpp ../src/wallpaper.cpp ../src/filepicker.cpp ../src/generator.cpp ../src/fetcher.cpp
+RESOURCES += ../src/resources.qrc

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Hackerman
+Comment=Omarchy Hackerman for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Hackerman
+GtkTheme=Omarchy-hackerman
+MetacityTheme=Omarchy-hackerman
+IconTheme=Adwaita
+CursorTheme=Adwaita

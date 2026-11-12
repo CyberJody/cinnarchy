@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+"""Rebuild data/template/ from the bundled Cinnamon themes.
+
+The bundled Omarchy-* themes share one layout; only the palette colours and the
+theme's name differ. This script turns Omarchy-nord into a template whose colour
+slots name the palette role they come from, infers each slot from all bundled
+themes, and fails unless the template regenerates every bundled theme exactly.
+Cinnarchy fills the same template (src/generator.cpp) for themes it fetches.
+
+Tokens:  {{role}}  #rrggbb      {{role:rgb}}  r, g, b      {{mix:a:b:t}}  #rrggbb
+         {{name}} {{title}} {{mode}} {{gtk_resource}}
+"""
+from pathlib import Path
+import itertools
+import json
+import re
+import shutil
+import sys
+
+root = Path(__file__).resolve().parents[1]
+themes_dir = root / 'data/themes'
+out = root / 'data/template'
+REF = 'nord'
+COLOR = re.compile(r'#[0-9a-fA-F]{6}\b|rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(?:,\s*[0-9.]+\s*)?\)')
+RGB = re.compile(r'(rgba?\()\s*\d+\s*,\s*\d+\s*,\s*\d+')
+ROLES = ['bg', 'fg', 'accent', 'surface', 'panel', 'deep', 'hover', 'pressed', 'border', 'muted',
+         'selection', 'on_selection', 'on_accent', 'link', 'error', 'warning', 'success']
+SKIP = {'palette.json'}
+
+
+def rgb(value):
+    if value.startswith('#'):
+        return tuple(int(value[i:i + 2], 16) for i in (1, 3, 5))
+    return tuple(int(x) for x in re.findall(r'\d+(?:\.\d+)?', value)[:3])
+
+
+def mix(a, b, t):
+    # Matches src/generator.cpp: IEEE double, round half to even.
+    return tuple(round(x * (1 - t) + y * t) for x, y in zip(a, b))
+
+
+def hexa(c):
+    return '#%02x%02x%02x' % c
+
+
+themes = sorted(p.name[len('Omarchy-'):] for p in themes_dir.glob('Omarchy-*') if p.is_dir())
+roles = {t: {k: rgb(v) for k, v in json.loads((themes_dir / f'Omarchy-{t}/palette.json').read_text())['roles'].items()
+             if k in ROLES} for t in themes}
+meta = {t: json.loads((themes_dir / f'Omarchy-{t}/palette.json').read_text()) for t in themes}
+ref_dir = themes_dir / f'Omarchy-{REF}'
+
+
+def token_for(values, original):
+    """Return a template token that reproduces every theme's value at this slot."""
+    if len(set(values.values())) == 1:
+        return original
+    colors = {t: rgb(v) for t, v in values.items()}
+    for role in ROLES:
+        if all(colors[t] == roles[t][role] for t in themes):
+            return f'{{{{{role}}}}}' if original.startswith('#') else RGB.sub(rf'\g<1>{{{{{role}:rgb}}}}', original)
+    if original.startswith('#'):
+        for a, b in itertools.permutations(ROLES, 2):
+            for step in range(1, 100):
+                t = step / 100
+                if all(hexa(mix(roles[x][a], roles[x][b], t)) == values[x].lower() for x in themes):
+                    return f'{{{{mix:{a}:{b}:{t:g}}}}}'
+    sys.exit(f'No role explains slot {original}: {values}')
+
+
+def neutral(text, slug):
+    m = meta[slug]
+    return (text.replace(f'Omarchy-{slug}', '{{name}}')
+                .replace(f'Omarchy · {m["title"]}', 'Omarchy · {{title}}')
+                .replace(f'Omarchy {m["title"]} for Cinnamon ({m["roles"]["mode"]})', 'Omarchy {{title}} for Cinnamon ({{mode}})')
+                .replace(f'Omarchy Cinnamon: {m["title"]}', 'Omarchy Cinnamon: {{title}}')
+                .replace(m['roles']['gtk_resource'], '{{gtk_resource}}'))
+
+
+shutil.rmtree(out, ignore_errors=True)
+for source in sorted(p for p in ref_dir.rglob('*') if p.is_file()):
+    rel = source.relative_to(ref_dir)
+    if str(rel) in SKIP:
+        continue
+    target = out / rel
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        texts = {t: neutral((themes_dir / f'Omarchy-{t}' / rel).read_text(), t) for t in themes}
+    except UnicodeDecodeError:
+        if len({(themes_dir / f'Omarchy-{t}' / rel).read_bytes() for t in themes}) != 1:
+            sys.exit(f'Binary file differs between themes: {rel}')
+        shutil.copyfile(source, target)
+        continue
+    slots = {t: COLOR.findall(s) for t, s in texts.items()}
+    pieces = COLOR.split(texts[REF])
+    if any(COLOR.split(s) != pieces for s in texts.values()):
+        sys.exit(f'Themes do not share one layout: {rel}')
+    result = [pieces[0]]
+    for i, original in enumerate(slots[REF]):
+        result += [token_for({t: slots[t][i] for t in themes}, original), pieces[i + 1]]
+    target.write_text(''.join(result))
+
+
+def render(text, slug):
+    m, r = meta[slug], roles[slug]
+    def fill(match):
+        parts = match.group(1).split(':')
+        if parts[0] == 'mix':
+            return hexa(mix(r[parts[1]], r[parts[2]], float(parts[3])))
+        if parts[0] in r:
+            return ', '.join(map(str, r[parts[0]])) if parts[1:] == ['rgb'] else hexa(r[parts[0]])
+        return {'name': f'Omarchy-{slug}', 'title': m['title'], 'mode': m['roles']['mode'],
+                'gtk_resource': m['roles']['gtk_resource']}[parts[0]]
+    return re.sub(r'\{\{([a-z_:.0-9]+)\}\}', fill, text)
+
+
+for t in themes:
+    for template in (p for p in out.rglob('*') if p.is_file()):
+        rel = template.relative_to(out)
+        expected = (themes_dir / f'Omarchy-{t}' / rel).read_bytes()
+        try:
+            actual = render(template.read_text(), t).encode()
+        except UnicodeDecodeError:
+            actual = template.read_bytes()
+        if actual != expected:
+            sys.exit(f'Template does not reproduce Omarchy-{t}/{rel}')
+print(f'Wrote {out}; it reproduces all {len(themes)} bundled themes exactly')

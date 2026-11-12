@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Gruvbox
+Comment=Omarchy Gruvbox for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Gruvbox
+GtkTheme=Omarchy-gruvbox
+MetacityTheme=Omarchy-gruvbox
+IconTheme=Adwaita
+CursorTheme=Adwaita

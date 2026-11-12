@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Starship
+Comment=Omarchy Starship for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Starship
+GtkTheme=Omarchy-starship
+MetacityTheme=Omarchy-starship
+IconTheme=Adwaita
+CursorTheme=Adwaita

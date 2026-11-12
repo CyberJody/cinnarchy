@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Last Horizon
+Comment=Omarchy Last Horizon for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Last Horizon
+GtkTheme=Omarchy-last-horizon
+MetacityTheme=Omarchy-last-horizon
+IconTheme=Adwaita
+CursorTheme=Adwaita

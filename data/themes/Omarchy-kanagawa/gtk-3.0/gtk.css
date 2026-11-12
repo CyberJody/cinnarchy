@@ -1,0 +1,188 @@
+/* Omarchy Cinnamon GTK 3.24 palette. SPDX-License-Identifier: GPL-2.0-or-later */
+@import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css");
+
+@define-color theme_bg_color #1f1f28;
+@define-color theme_fg_color #dcd7ba;
+@define-color theme_base_color #17171e;
+@define-color theme_text_color #dcd7ba;
+@define-color theme_selected_bg_color #dcd7ba;
+@define-color theme_selected_fg_color #1f1f28;
+@define-color insensitive_bg_color #1f1f28;
+@define-color insensitive_fg_color #908d80;
+@define-color insensitive_base_color #223249;
+@define-color theme_unfocused_bg_color #1f1f28;
+@define-color theme_unfocused_fg_color #908d80;
+@define-color theme_unfocused_base_color #17171e;
+@define-color theme_unfocused_text_color #908d80;
+@define-color theme_unfocused_selected_bg_color #363646;
+@define-color theme_unfocused_selected_fg_color #dcd7ba;
+@define-color borders #494748;
+@define-color unfocused_borders #494748;
+@define-color warning_color #c0a36e;
+@define-color error_color #c34043;
+@define-color success_color #76946a;
+@define-color wm_bg #17171e;
+@define-color wm_border #494748;
+@define-color wm_title #dcd7ba;
+@define-color wm_unfocused_title #908d80;
+@define-color wm_highlight #dcd7ba;
+@define-color wm_shadow alpha(black, .35);
+
+* { outline-color: alpha(#dcd7ba, .65); -gtk-secondary-caret-color: #dcd7ba; }
+.background:not(.nemo-desktop-window):not(.nemo-blank-desktop-window),
+.background:not(.nemo-desktop-window):not(.nemo-blank-desktop-window):backdrop,
+dialog, messagedialog, .gtkstyle-fallback {
+  color: #dcd7ba; background-color: #1f1f28;
+}
+.view, .view:backdrop, iconview, iconview:backdrop, textview text, textview text:backdrop,
+treeview.view, treeview.view:backdrop, list, list:backdrop {
+  color: #dcd7ba; background-color: #17171e; caret-color: #dcd7ba;
+}
+textview border, .view:disabled, textview text:disabled { background-color: #1f1f28; }
+label, label:backdrop { color: inherit; }
+label:disabled, label:disabled:backdrop, .view:disabled, entry:disabled,
+button:disabled, button:disabled label { color: #908d80; }
+selection, label selection, entry selection, textview text selection {
+  color: #1f1f28; background-color: #dcd7ba;
+}
+row:selected, row:selected:backdrop, treeview.view:selected, treeview.view:selected:focus,
+iconview:selected, .view:selected, flowbox flowboxchild:selected,
+.sidebar row:selected, .sidebar row:selected:backdrop {
+  color: #dcd7ba; background-color: #363646;
+}
+row:selected label, treeview.view:selected label { color: inherit; }
+headerbar, headerbar:backdrop, .titlebar, .titlebar:backdrop,
+.titlebar:not(headerbar), .titlebar:not(headerbar):backdrop {
+  color: #dcd7ba; background-color: #17171e; background-image: none;
+  border-color: #494748; box-shadow: inset 0 -1px #494748;
+  text-shadow: none; -gtk-icon-shadow: none;
+}
+headerbar:backdrop, .titlebar:backdrop { color: #908d80; }
+/* The blurred shadow is for client-side windows only. Muffin draws server-side
+ * frames from the .ssd rule and mispaints the window when it carries one. */
+window.csd decoration {
+  border-radius: 10px 10px 0 0; border: 1px solid #494748;
+  box-shadow: 0 5px 18px alpha(black, .28);
+}
+window.ssd decoration { border-radius: 10px 10px 0 0; border: 1px solid #494748; }
+window.maximized decoration, window.fullscreen decoration { border-radius: 0; border: none; }
+button, button:backdrop, combobox button, spinbutton button {
+  color: #dcd7ba; background-color: #223249; background-image: none;
+  border-color: #494748; border-radius: 7px; box-shadow: none;
+  text-shadow: none; -gtk-icon-shadow: none;
+}
+button:hover, combobox button:hover, spinbutton button:hover {
+  color: #dcd7ba; background-color: #354254; border-color: #494748;
+}
+button:active, button:checked, button:checked:backdrop,
+button.toggle:checked, button.toggle:checked:hover {
+  color: #dcd7ba; background-color: #363646; background-image: none; border-color: #dcd7ba;
+}
+button:disabled, button:disabled:backdrop { background-color: #1f1f28; background-image: none; border-color: #494748; }
+button.flat, button.flat:backdrop { color: #dcd7ba; background: transparent; border-color: transparent; }
+button.flat:hover { background-color: #223249; border-color: transparent; }
+button.suggested-action, button.suggested-action:hover, button.suggested-action:active,
+button.suggested-action:backdrop, button.suggested-action:checked,
+button.suggested-action:checked:hover, button.suggested-action:checked:backdrop,
+button.suggested-action:active:backdrop {
+  color: #1f1f28; background-color: #dcd7ba; border-color: #dcd7ba;
+  background-image: none; box-shadow: none; text-shadow: none; -gtk-icon-shadow: none;
+}
+button.suggested-action:disabled, button.suggested-action:disabled:backdrop {
+  color: #908d80; background-color: #223249; background-image: none; border-color: #494748;
+}
+button.destructive-action, button.destructive-action:hover, button.destructive-action:active,
+button.destructive-action:backdrop, button.destructive-action:checked {
+  color: #dcd7ba; background-color: #223249; border-color: #c34043;
+  background-image: none; box-shadow: none; text-shadow: none; -gtk-icon-shadow: none;
+}
+entry, entry:backdrop, spinbutton:not(.vertical), spinbutton:not(.vertical):backdrop,
+combobox entry, searchentry {
+  color: #dcd7ba; background-color: #17171e; background-image: none;
+  border-color: #494748; border-radius: 7px; box-shadow: none;
+  caret-color: #dcd7ba; text-shadow: none;
+}
+entry:focus, spinbutton:not(.vertical):focus-within { border-color: #dcd7ba; box-shadow: inset 0 0 0 1px #dcd7ba; }
+entry:disabled { background-color: #223249; }
+entry.error { border-color: #c34043; }
+entry.warning { border-color: #c0a36e; }
+menu, .menu, menu:backdrop, popover, popover.background, popover:backdrop,
+.app-notification, .app-notification.frame, tooltip, tooltip.background {
+  color: #dcd7ba; background-color: #1f1f28; background-image: none; border-color: #494748;
+  text-shadow: none; -gtk-icon-shadow: none;
+}
+menuitem, menuitem:backdrop, modelbutton { color: #dcd7ba; background-color: transparent; }
+menuitem:hover, menuitem:active, modelbutton:hover, modelbutton:active {
+  color: #dcd7ba; background-color: #363646;
+}
+menuitem:disabled { color: #908d80; }
+menubar, menubar:backdrop, toolbar, toolbar:backdrop, .inline-toolbar,
+actionbar, actionbar:backdrop, statusbar {
+  color: #dcd7ba; background-color: #1f1f28; background-image: none; border-color: #494748;
+}
+.sidebar, .sidebar:backdrop, .sidebar .view, .sidebar list,
+placessidebar, placessidebar:backdrop { color: #dcd7ba; background-color: #17171e; }
+row, row:backdrop { color: #dcd7ba; }
+row:hover { background-color: #223249; }
+frame > border, .frame, separator, paned > separator, scrolledwindow,
+notebook, notebook > header, notebook > stack { border-color: #494748; }
+separator { background-color: #494748; }
+notebook > header, notebook > header:backdrop {
+  background-color: #17171e; background-image: none; box-shadow: none;
+}
+notebook > header tab { color: #908d80; background-color: transparent; border-color: transparent; }
+notebook > header tab:hover { color: #dcd7ba; background-color: #223249; }
+notebook > header tab:checked { color: #dcd7ba; background-color: #1f1f28; box-shadow: inset 0 -2px #dcd7ba; }
+notebook > stack { background-color: #1f1f28; }
+treeview.view header button { color: #dcd7ba; background-color: #223249; border-color: #494748; }
+treeview.view:selected { border-color: #363646; }
+switch, switch:backdrop { background-color: #223249; background-image: none; border-color: #494748; }
+switch:checked, switch:checked:backdrop { color: #1f1f28; background-color: #dcd7ba; border-color: #dcd7ba; }
+switch slider, switch slider:backdrop { background-color: #dcd7ba; background-image: none; border-color: #494748; }
+switch:checked slider { background-color: #1f1f28; border-color: #dcd7ba; }
+check, radio, check:backdrop, radio:backdrop {
+  color: #dcd7ba; background-color: #223249; background-image: none;
+  border-color: #494748; box-shadow: none; -gtk-icon-shadow: none;
+}
+check:checked, check:indeterminate, radio:checked, radio:indeterminate,
+check:checked:backdrop, radio:checked:backdrop, check:checked:hover, radio:checked:hover,
+check:indeterminate:hover, radio:indeterminate:hover, check:indeterminate:backdrop, radio:indeterminate:backdrop {
+  color: #1f1f28; background-color: #dcd7ba; border-color: #dcd7ba;
+  background-image: none; box-shadow: none;
+}
+check:hover, radio:hover { background-color: #354254; background-image: none; }
+check:checked:hover, radio:checked:hover { background-color: #dcd7ba; }
+check:disabled, radio:disabled, check:checked:disabled, radio:checked:disabled,
+check:checked:disabled:backdrop, radio:checked:disabled:backdrop {
+  color: #908d80; background-color: #223249; background-image: none; border-color: #494748;
+}
+scale trough, scale trough:backdrop, progressbar trough, progressbar trough:backdrop,
+levelbar trough { background-color: #223249; background-image: none; border-color: #494748; }
+scale highlight, scale highlight:backdrop, progressbar progress, progressbar progress:backdrop,
+levelbar block.filled { background-color: #dcd7ba; background-image: none; border-color: #dcd7ba; }
+scale slider, scale slider:backdrop { background-color: #dcd7ba; background-image: none; border-color: #494748; box-shadow: none; }
+scrollbar, scrollbar:backdrop, scrollbar trough, scrollbar trough:backdrop { background-color: #17171e; border-color: #494748; }
+scrollbar slider, scrollbar slider:backdrop { background-color: #908d80; background-image: none; border-color: transparent; }
+scrollbar slider:hover { background-color: #dcd7ba; }
+button.link, button.link:link, *:link { color: #dcd7ba; }
+button.link:visited, *:visited { color: #dcd7ba; }
+calendar { color: #dcd7ba; background-color: #1f1f28; border-color: #494748; }
+calendar.header { color: #dcd7ba; background-color: #223249; border-color: #494748; }
+calendar:selected { color: #1f1f28; background-color: #dcd7ba; }
+calendar:indeterminate { color: #908d80; }
+rubberband, .rubberband { border-color: #dcd7ba; background-color: alpha(#dcd7ba, .2); }
+.osd, .osd.background { color: #dcd7ba; background-color: #17171e; text-shadow: none; }
+.nemo-window .sidebar .view, .nemo-window .sidebar { background-color: #17171e; color: #dcd7ba; }
+.nemo-desktop.nemo-canvas-item { color: white; text-shadow: 1px 1px 2px black; }
+
+/* Nemo creates a desktop window over each icon-enabled monitor. Its window,
+ * view and notebook stack must stay transparent so the compositor's wallpaper
+ * remains visible. Ordinary Nemo file-manager windows keep the app palette. */
+window.nemo-desktop-window, window.nemo-desktop-window:backdrop,
+window.nemo-blank-desktop-window, window.nemo-blank-desktop-window:backdrop,
+.nemo-desktop-window .nemo-window-pane,
+.nemo-window.nemo-desktop-window notebook, .nemo-window.nemo-desktop-window notebook:backdrop,
+.nemo-window.nemo-desktop-window notebook > stack, .nemo-window.nemo-desktop-window notebook > stack:backdrop,
+.nemo-desktop-window paned, .nemo-desktop.view, .nemo-desktop.view:backdrop {
+  background-color: transparent; background-image: none; box-shadow: none;
+}

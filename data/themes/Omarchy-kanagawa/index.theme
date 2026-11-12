@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Kanagawa
+Comment=Omarchy Kanagawa for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Kanagawa
+GtkTheme=Omarchy-kanagawa
+MetacityTheme=Omarchy-kanagawa
+IconTheme=Adwaita
+CursorTheme=Adwaita

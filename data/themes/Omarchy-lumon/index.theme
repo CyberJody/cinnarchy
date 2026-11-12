@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Lumon
+Comment=Omarchy Lumon for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Lumon
+GtkTheme=Omarchy-lumon
+MetacityTheme=Omarchy-lumon
+IconTheme=Adwaita
+CursorTheme=Adwaita

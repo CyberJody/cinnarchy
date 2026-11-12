@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Tokyo Night
+Comment=Omarchy Tokyo Night for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Tokyo Night
+GtkTheme=Omarchy-tokyo-night
+MetacityTheme=Omarchy-tokyo-night
+IconTheme=Adwaita
+CursorTheme=Adwaita

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Solitude
+Comment=Omarchy Solitude for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Solitude
+GtkTheme=Omarchy-solitude
+MetacityTheme=Omarchy-solitude
+IconTheme=Adwaita
+CursorTheme=Adwaita

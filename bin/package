@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import hashlib
+import re
+import subprocess
+import tarfile
+
+root = Path(__file__).resolve().parents[1]
+template = (root / 'pkgbuild/PKGBUILD.in').read_text()
+version = re.search(r'^pkgver=([0-9.]+)$', template, re.M).group(1)
+release_root = f'cinnarchy-{version}'
+archive = root / 'pkgbuild' / f'{release_root}.tar.gz'
+with tarfile.open(archive, 'w:gz') as tar:
+    for path in sorted(root.rglob('*')):
+        relative = path.relative_to(root)
+        if relative.parts[0] in ('.git', 'build', 'pkgbuild') or '__pycache__' in relative.parts:
+            continue
+        if path.is_file():
+            tar.add(path, arcname=release_root + '/' + str(relative), recursive=False)
+    for name in ('cinnarchy.desktop', 'cinnarchy.svg', 'PKGBUILD.in'):
+        path = root / 'pkgbuild' / name
+        tar.add(path, arcname=release_root + '/pkgbuild/' + name)
+digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+(root / 'pkgbuild/PKGBUILD').write_text(template.replace('@SHA256@', digest))
+subprocess.run(['makepkg', '--force', '--clean'], cwd=root / 'pkgbuild', check=True)

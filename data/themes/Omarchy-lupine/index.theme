@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Lupine
+Comment=Omarchy Lupine for Cinnamon (light)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Lupine
+GtkTheme=Omarchy-lupine
+MetacityTheme=Omarchy-lupine
+IconTheme=Adwaita
+CursorTheme=Adwaita

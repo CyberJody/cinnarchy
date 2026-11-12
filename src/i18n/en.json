@@ -1,0 +1,10 @@
+{
+  "%n themes": {
+    "one": "%n theme",
+    "other": "%n themes"
+  },
+  "%n backgrounds": {
+    "one": "%n background",
+    "other": "%n backgrounds"
+  }
+}

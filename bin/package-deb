@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""Build Debian packages for the picker and the Omarchy backgrounds it uses.
+
+  bin/package-deb            build both .deb files into pkgdeb/
+  bin/package-deb app        build only cinnarchy_<ver>-<rev>_amd64.deb
+  bin/package-deb assets     build only omarchy-theme-backgrounds_<ver>_all.deb
+
+Debian has no Omarchy package, so the assets package supplies the files that
+Omarchy 4.5.0 installed on Arch: each theme's backgrounds/ and icons.theme from
+the v4.5.0 release, plus the omarchy-themes-intros video backgrounds. They go
+to /usr/share/omarchy/themes, the first location the picker searches.
+"""
+from pathlib import Path
+import hashlib
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import urllib.request
+
+root = Path(__file__).resolve().parents[1]
+out = root / 'pkgdeb'
+cache = root / 'build/omarchy-assets'
+
+OMARCHY_REPO = 'https://github.com/omacom/omarchy.git'
+OMARCHY_TAG = 'v4.5.0'
+INTROS_VERSION = '2026.10.14-1'
+INTROS_URL = f'https://pkgs.omarchy.org/stable/x86_64/omarchy-themes-intros-{INTROS_VERSION}-any.pkg.tar.zst'
+INTROS_SHA256 = 'd748591bc725de043f6ce1895b1015af3085037ab4e5f1af58f039305e1d5d9a'
+ASSETS_NAME = 'omarchy-theme-backgrounds'
+ASSETS_VERSION = '4.5.0+intros' + INTROS_VERSION.split('-')[0].replace('.', '') + '-1'
+MAINTAINER = 'CyberJody <346445232+CyberJody@users.noreply.github.com>'
+DEB_REVISION = '1'  # bump when packaging or Debian-specific source changes
+
+# QML modules, Qt plugins and helpers loaded at run time, which
+# dpkg-shlibdeps cannot see from the binary's ELF dependencies.
+RUNTIME_DEPENDS = [
+    'qml6-module-qtquick', 'qml6-module-qtquick-controls', 'qml6-module-qtquick-layouts',
+    'qml6-module-qtquick-templates', 'qml6-module-qtquick-window', 'qml6-module-qtqml-workerscript',
+    'qml6-module-qtmultimedia', 'qt6-qpa-plugins', 'qt6-svg-plugins', 'qt6-image-formats-plugins',
+    'cinnamon', 'mpv', 'ffmpeg', 'xdg-desktop-portal', 'git',
+]
+RECOMMENDS = [ASSETS_NAME, 'yaru-theme-icon', 'papirus-icon-theme', 'xdg-desktop-portal-xapp']
+
+
+def run(*args, **kw):
+    return subprocess.run(list(args), check=True, **kw)
+
+
+def version():
+    text = (root / 'pkgbuild/PKGBUILD.in').read_text()
+    return re.search(r'^pkgver=([0-9.]+)$', text, re.M).group(1)
+
+
+def build_deb(stage, name):
+    for path in stage.rglob('*'):
+        if path.is_dir():
+            path.chmod(0o755)
+    out.mkdir(exist_ok=True)
+    target = out / name
+    run('dpkg-deb', '--root-owner-group', '-Zxz', '--build', str(stage), str(target))
+    print(f'Built {target}')
+    return target
+
+
+def install(src, dst, mode=0o644):
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(src, dst)
+    dst.chmod(mode)
+
+
+def shlibdeps(binary):
+    """Library dependencies of the binary, as dpkg-shlibdeps reports them."""
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / 'debian').mkdir()
+        (Path(tmp) / 'debian/control').write_text(
+            'Source: cinnarchy\n\nPackage: cinnarchy\nArchitecture: any\n')
+        result = run('dpkg-shlibdeps', '-O', '--warnings=0', str(binary), cwd=tmp,
+                     capture_output=True, text=True).stdout
+    match = re.search(r'shlibs:Depends=(.*)', result)
+    return [d.strip() for d in match.group(1).split(',')] if match else []
+
+
+def package_app():
+    ver = version()
+    binary = root / 'build/cinnarchy'
+    if not binary.is_file():
+        run(str(root / 'bin/build'))
+    with tempfile.TemporaryDirectory() as tmp:
+        stage = Path(tmp) / 'cinnarchy'
+        install(binary, stage / 'usr/bin/cinnarchy', 0o755)
+        run('strip', '--strip-unneeded', str(stage / 'usr/bin/cinnarchy'))
+        install(root / 'pkgbuild/cinnarchy.desktop', stage / 'usr/share/applications/cinnarchy.desktop')
+        install(root / 'pkgbuild/cinnarchy.svg', stage / 'usr/share/icons/hicolor/scalable/apps/cinnarchy.svg')
+        doc = stage / 'usr/share/doc/cinnarchy'
+        for name in ('README.md', 'NOTICE', 'COPYING', 'LICENSE', 'OMARCHY-LICENSE'):
+            install(root / name, doc / name)
+        (doc / 'copyright').write_text(
+            'Cinnarchy (Omarchy Theme Picker for Cinnamon)\n'
+            'License: GPL-2.0-or-later (themes derived from Cinnamon) and MIT.\n'
+            'See COPYING, LICENSE, OMARCHY-LICENSE and NOTICE in this directory.\n')
+        depends = sorted(set(shlibdeps(stage / 'usr/bin/cinnarchy') + RUNTIME_DEPENDS))
+        size = sum(p.stat().st_size for p in stage.rglob('*') if p.is_file()) // 1024
+        (stage / 'DEBIAN').mkdir()
+        (stage / 'DEBIAN/control').write_text(f"""Package: cinnarchy
+Version: {ver}-{DEB_REVISION}
+Architecture: amd64
+Maintainer: {MAINTAINER}
+Installed-Size: {size}
+Depends: {', '.join(depends)}
+Recommends: {', '.join(RECOMMENDS)}
+Section: x11
+Priority: optional
+Homepage: https://github.com/CyberJody/cinnarchy
+Description: Omarchy full-theme picker for Cinnamon
+ Switches the Cinnamon desktop theme, GTK applications, window borders,
+ matching icons, background and the dark/light preference together, using
+ the Omarchy palettes. Includes per-display and animated wallpapers, with
+ undo, redo and restore.
+""")
+        return build_deb(stage, f'cinnarchy_{ver}-{DEB_REVISION}_amd64.deb')
+
+
+def fetch_assets():
+    themes = cache / 'omarchy/themes'
+    if not themes.is_dir():
+        shutil.rmtree(cache / 'omarchy', ignore_errors=True)
+        cache.mkdir(parents=True, exist_ok=True)
+        run('git', 'clone', '--quiet', '--depth', '1', '--filter=blob:none', '--sparse',
+            '--branch', OMARCHY_TAG, OMARCHY_REPO, str(cache / 'omarchy'))
+        run('git', '-C', str(cache / 'omarchy'), 'sparse-checkout', 'set', 'themes')
+    intros = cache / 'intros.pkg.tar.zst'
+    if not intros.is_file() or hashlib.sha256(intros.read_bytes()).hexdigest() != INTROS_SHA256:
+        request = urllib.request.Request(INTROS_URL, headers={'User-Agent': 'cinnarchy-package-deb'})
+        with urllib.request.urlopen(request) as response, open(intros, 'wb') as stream:
+            shutil.copyfileobj(response, stream)
+        digest = hashlib.sha256(intros.read_bytes()).hexdigest()
+        if digest != INTROS_SHA256:
+            intros.unlink()
+            sys.exit(f'Checksum mismatch for {INTROS_URL}: {digest}')
+    return themes, intros
+
+
+def package_assets():
+    themes, intros = fetch_assets()
+    slugs = {entry.name for entry in (root / 'data/themes').iterdir() if entry.is_dir()}
+    slugs = sorted(s.removeprefix('Omarchy-') for s in slugs)
+    with tempfile.TemporaryDirectory() as tmp:
+        stage = Path(tmp) / ASSETS_NAME
+        dest = stage / 'usr/share/omarchy/themes'
+        for slug in slugs:
+            source = themes / slug
+            if not source.is_dir():
+                sys.exit(f'Omarchy {OMARCHY_TAG} has no theme "{slug}"')
+            for path in sorted(source.rglob('*')):
+                relative = path.relative_to(source)
+                if path.is_file() and (relative.parts[0] == 'backgrounds' or relative.name in ('icons.theme', 'colors.toml', 'light.mode')):
+                    install(path, dest / slug / relative)
+        extracted = Path(tmp) / 'intros'
+        extracted.mkdir()
+        run('tar', '--zstd', '-xf', str(intros), '-C', str(extracted), 'usr/share/omarchy/themes')
+        for path in sorted((extracted / 'usr/share/omarchy/themes').rglob('*.mp4')):
+            relative = path.relative_to(extracted / 'usr/share/omarchy/themes')
+            if relative.parts[0] in slugs:
+                install(path, dest / relative)
+        doc = stage / f'usr/share/doc/{ASSETS_NAME}'
+        install(root / 'OMARCHY-LICENSE', doc / 'OMARCHY-LICENSE')
+        (doc / 'copyright').write_text(
+            f'Backgrounds and icon choices from Omarchy {OMARCHY_TAG} ({OMARCHY_REPO})\n'
+            f'and omarchy-themes-intros {INTROS_VERSION} ({INTROS_URL}).\n'
+            'Omarchy is MIT licensed; see OMARCHY-LICENSE. Individual background\n'
+            'images remain the work of their respective artists.\n')
+        size = sum(p.stat().st_size for p in stage.rglob('*') if p.is_file()) // 1024
+        (stage / 'DEBIAN').mkdir()
+        (stage / 'DEBIAN/control').write_text(f"""Package: {ASSETS_NAME}
+Version: {ASSETS_VERSION}
+Architecture: all
+Maintainer: {MAINTAINER}
+Installed-Size: {size}
+Recommends: yaru-theme-icon
+Section: x11
+Priority: optional
+Homepage: https://github.com/omacom/omarchy
+Description: Omarchy theme backgrounds and intro videos
+ Still and animated backgrounds plus matching icon-theme names for the
+ Omarchy palettes, installed in Omarchy's layout under
+ /usr/share/omarchy/themes for use by cinnarchy on systems without Omarchy.
+""")
+        return build_deb(stage, f'{ASSETS_NAME}_{ASSETS_VERSION}_all.deb')
+
+
+if __name__ == '__main__':
+    which = sys.argv[1] if len(sys.argv) > 1 else 'all'
+    if which not in ('all', 'app', 'assets'):
+        sys.exit(__doc__)
+    if which in ('all', 'app'):
+        package_app()
+    if which in ('all', 'assets'):
+        package_assets()

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Matte Black
+Comment=Omarchy Matte Black for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Matte Black
+GtkTheme=Omarchy-matte-black
+MetacityTheme=Omarchy-matte-black
+IconTheme=Adwaita
+CursorTheme=Adwaita

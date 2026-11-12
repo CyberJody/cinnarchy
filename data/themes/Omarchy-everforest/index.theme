@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Everforest
+Comment=Omarchy Everforest for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Everforest
+GtkTheme=Omarchy-everforest
+MetacityTheme=Omarchy-everforest
+IconTheme=Adwaita
+CursorTheme=Adwaita

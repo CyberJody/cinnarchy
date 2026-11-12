@@ -1,0 +1,27 @@
+Cinnarchy — Omarchy Theme Picker for Cinnamon
+
+Cinnarchy is an independent project. It is not affiliated with or endorsed by
+Omarchy, Basecamp, 37signals or Linux Mint.
+
+The Cinnamon shell stylesheet and its accompanying assets in data/themes and
+data/template are derived from the Cinnamon 6.6.9 default theme, copyright the
+Cinnamon/GNOME Shell contributors, under the GNU General Public License
+version 2 or later. Palette colors and additional styling were substituted on
+2026-11-10.
+Source: https://github.com/linuxmint/cinnamon/tree/master/data/theme
+
+The bundled palette data (data/themes/*/palette.json and manifest.json) is
+copied from Omarchy 4.5.0, copyright David Heinemeier Hansson and contributors,
+under the MIT license. Its permission notice is reproduced in OMARCHY-LICENSE.
+src/generator.cpp ports Omarchy's palette fallback rules and alacritty.toml
+reader (bin/omarchy-theme-color, bin/omarchy-theme-colors-from-alacritty)
+from the same MIT-licensed project.
+Source: https://github.com/omacom/omarchy
+
+The GTK stylesheet imports the installed GTK 3.24 Adwaita resource at runtime;
+GTK itself and the Adwaita resources are not redistributed.
+
+No wallpaper, font, icon pack or cursor theme is included in this repository.
+Wallpapers come from an installed Omarchy, from themes the user downloads, or
+from the omarchy-theme-backgrounds package that bin/package-deb builds locally
+from Omarchy's own repository.

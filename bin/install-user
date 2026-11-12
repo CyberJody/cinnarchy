@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""Install the picker and launcher for this user, without administrator access."""
+from pathlib import Path
+import os
+import shutil
+import subprocess
+import tempfile
+
+root = Path(__file__).resolve().parents[1]
+binary = root / 'build/cinnarchy'
+if not binary.is_file():
+    binary = root / 'cinnarchy'
+if not binary.is_file():
+    subprocess.run([str(root / 'bin/build')], check=True)
+    binary = root / 'build/cinnarchy'
+data = Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share')))
+targets = {
+    Path.home() / '.local/bin/cinnarchy': binary,
+    data / 'icons/hicolor/scalable/apps/cinnarchy.svg': root / 'pkgbuild/cinnarchy.svg',
+}
+desktop = data / 'applications/cinnarchy.desktop'
+for target, source in targets.items():
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, stage = tempfile.mkstemp(prefix='.cinnarchy-', dir=target.parent)
+    os.close(fd)
+    try:
+        shutil.copyfile(source, stage)
+        os.chmod(stage, 0o755 if target.name == 'cinnarchy' else 0o644)
+        os.replace(stage, target)
+    finally:
+        if os.path.exists(stage):
+            os.unlink(stage)
+desktop.parent.mkdir(parents=True, exist_ok=True)
+text = (root / 'pkgbuild/cinnarchy.desktop').read_text()
+installed_binary = str(Path.home() / '.local/bin/cinnarchy').replace('\\', '\\\\').replace('"', '\\"')
+text = text.replace('Exec=cinnarchy open', f'Exec="{installed_binary}" open')
+fd, stage = tempfile.mkstemp(prefix='.cinnarchy-', dir=desktop.parent)
+with os.fdopen(fd, 'w') as stream:
+    stream.write(text)
+os.chmod(stage, 0o644)
+os.replace(stage, desktop)
+if shutil.which('update-desktop-database'):
+    subprocess.run(['update-desktop-database', str(desktop.parent)], check=True)
+print(f'Installed {Path.home() / ".local/bin/cinnarchy"}')
+print(f'Launcher: {desktop}')

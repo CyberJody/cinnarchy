@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Ristretto
+Comment=Omarchy Ristretto for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Ristretto
+GtkTheme=Omarchy-ristretto
+MetacityTheme=Omarchy-ristretto
+IconTheme=Adwaita
+CursorTheme=Adwaita

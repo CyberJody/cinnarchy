@@ -1,0 +1,11 @@
+name: Suggest an idea
+description: A feature or improvement for the theme picker.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: Describe the idea and the problem it solves.
+    validations:
+      required: true

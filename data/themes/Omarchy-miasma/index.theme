@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Miasma
+Comment=Omarchy Miasma for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Miasma
+GtkTheme=Omarchy-miasma
+MetacityTheme=Omarchy-miasma
+IconTheme=Adwaita
+CursorTheme=Adwaita

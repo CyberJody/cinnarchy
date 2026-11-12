@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Problems with a community theme's colors or wallpapers
+    url: https://omarchy.org/themes/
+    about: Community themes are made by their authors; each links to its own repository.

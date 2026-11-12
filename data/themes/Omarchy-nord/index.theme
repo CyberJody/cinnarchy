@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Nord
+Comment=Omarchy Nord for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Nord
+GtkTheme=Omarchy-nord
+MetacityTheme=Omarchy-nord
+IconTheme=Adwaita
+CursorTheme=Adwaita

@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<!-- Omarchy Cinnamon legacy window borders. GPL-2.0-or-later. -->
+<metacity_theme>
+  <info><name>Omarchy Cinnamon</name><author>Omarchy Cinnamon contributors</author><copyright>2026</copyright><date>2026-11-10</date><description>Omarchy palette window borders</description></info>
+  <frame_geometry name="normal" rounded_top_left="8" rounded_top_right="8">
+    <distance name="left_width" value="1"/><distance name="right_width" value="1"/>
+    <distance name="bottom_height" value="1"/><distance name="title_vertical_pad" value="8"/>
+    <border name="title_border" left="12" right="12" top="0" bottom="0"/>
+    <border name="button_border" left="3" right="3" top="5" bottom="5"/>
+    <aspect_ratio name="button" value="1"/>
+  </frame_geometry>
+  <frame_geometry name="maximized" parent="normal" rounded_top_left="false" rounded_top_right="false">
+    <distance name="left_width" value="0"/><distance name="right_width" value="0"/><distance name="bottom_height" value="0"/>
+  </frame_geometry>
+  <draw_ops name="empty"/>
+  <draw_ops name="background"><rectangle color="#0d0d0d" x="0" y="0" width="width" height="height" filled="true"/></draw_ops>
+  <draw_ops name="border"><rectangle color="#383838" x="0" y="0" width="width-1" height="height-1" filled="false"/></draw_ops>
+  <draw_ops name="title"><title color="#bebebe" x="12" y="(height-title_height)/2"/></draw_ops>
+  <draw_ops name="title-inactive"><title color="#797979" x="12" y="(height-title_height)/2"/></draw_ops>
+  <draw_ops name="button-hover"><rectangle color="#2e2e2e" x="0" y="0" width="width" height="height" filled="true"/></draw_ops>
+  <draw_ops name="close">
+    <line color="#bebebe" width="1" x1="width/2-4" y1="height/2-4" x2="width/2+4" y2="height/2+4"/>
+    <line color="#bebebe" width="1" x1="width/2+4" y1="height/2-4" x2="width/2-4" y2="height/2+4"/>
+  </draw_ops>
+  <draw_ops name="minimize"><line color="#bebebe" width="1" x1="width/2-4" y1="height/2+3" x2="width/2+4" y2="height/2+3"/></draw_ops>
+  <draw_ops name="maximize"><rectangle color="#bebebe" x="width/2-4" y="height/2-4" width="8" height="8" filled="false"/></draw_ops>
+  <draw_ops name="menu"><line color="#bebebe" width="1" x1="width/2-4" y1="height/2" x2="width/2+4" y2="height/2"/></draw_ops>
+  <draw_ops name="close-hover"><include name="button-hover"/><include name="close"/></draw_ops>
+  <draw_ops name="minimize-hover"><include name="button-hover"/><include name="minimize"/></draw_ops>
+  <draw_ops name="maximize-hover"><include name="button-hover"/><include name="maximize"/></draw_ops>
+  <draw_ops name="menu-hover"><include name="button-hover"/><include name="menu"/></draw_ops>
+  <frame_style name="active" geometry="normal">
+    <piece position="entire_background" draw_ops="background"/>
+    <piece position="overlay" draw_ops="border"/><piece position="title" draw_ops="title"/>
+    <button function="close" state="normal" draw_ops="close"/><button function="close" state="prelight" draw_ops="close-hover"/><button function="close" state="pressed" draw_ops="close-hover"/>
+    <button function="minimize" state="normal" draw_ops="minimize"/><button function="minimize" state="prelight" draw_ops="minimize-hover"/><button function="minimize" state="pressed" draw_ops="minimize-hover"/>
+    <button function="maximize" state="normal" draw_ops="maximize"/><button function="maximize" state="prelight" draw_ops="maximize-hover"/><button function="maximize" state="pressed" draw_ops="maximize-hover"/>
+    <button function="menu" state="normal" draw_ops="menu"/><button function="menu" state="prelight" draw_ops="menu-hover"/><button function="menu" state="pressed" draw_ops="menu-hover"/>
+  </frame_style>
+  <frame_style name="inactive" parent="active" geometry="normal"><piece position="title" draw_ops="title-inactive"/></frame_style>
+  <frame_style name="active-max" parent="active" geometry="maximized"/>
+  <frame_style name="inactive-max" parent="inactive" geometry="maximized"/>
+  <frame_style_set name="normal">
+    <frame focus="yes" state="normal" resize="both" style="active"/>
+    <frame focus="no" state="normal" resize="both" style="inactive"/>
+    <frame focus="yes" state="maximized" style="active-max"/>
+    <frame focus="no" state="maximized" style="inactive-max"/>
+    <frame focus="yes" state="shaded" style="active"/>
+    <frame focus="no" state="shaded" style="inactive"/>
+    <frame focus="yes" state="maximized_and_shaded" style="active-max"/>
+    <frame focus="no" state="maximized_and_shaded" style="inactive-max"/>
+  </frame_style_set>
+  <window type="normal" style_set="normal"/><window type="dialog" style_set="normal"/>
+  <window type="modal_dialog" style_set="normal"/><window type="utility" style_set="normal"/>
+  <window type="menu" style_set="normal"/><window type="border" style_set="normal"/>
+</metacity_theme>

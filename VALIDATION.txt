@@ -1,0 +1,76 @@
+Cinnarchy 1.1.0 — Omarchy Theme Picker for Cinnamon
+Validated 2026-11-10 on Cinnamon 6.6.9 / Muffin 6.6.3 / Qt 6.12.0, X11.
+
+Build and installation
+  qmake6 + make: passed without compiler warnings.
+  Native user installation, desktop entry validation, Arch package build:
+    passed.
+
+Backend and actual QML
+  QtTest: 20 passed, 0 failed, 0 skipped, including setup/cleanup.
+  Covers theme generation/repair, settings/history, rollback, locked settings,
+    optional components, missing files, icon fallback and recovery.
+  Multi-display tests cover unequal resolutions, negative coordinates, gaps,
+    per-screen selection, preserving other screens, composite pixels, fit and span,
+    imported files with spaces, persistence, Undo/Redo and reopening.
+  Real MP4, GIF and animated WebP fixtures verify discovery and decoding,
+    poster generation, pause/resume, stop and Undo configuration.
+  Mouse/keyboard events drive the real QML offscreen: theme search, theme and
+    second-display selection, background selection, file chooser callback,
+    Apply, Undo and Redo. No QML warnings.
+  Pixel assertions verify actual image and video-poster preview rendering.
+  English and Danish screenshots inspected. Software-rendered video previews
+    show a labeled still poster; desktop playback uses the separate renderer.
+  The real XDG file chooser accepted a request and rendered; the test canceled
+    its own request without selecting or modifying a user file.
+
+Native two-monitor playback
+  3440x1440 primary + 1920x1080 secondary at 3440,0 (5360x1440 desktop).
+  Distinct static images displayed on both physical monitors.
+  Omarchy Ethereal H.264 intro played on the secondary and then primary.
+  A GIF on the primary and MP4 on the secondary also played simultaneously.
+  Native captures confirmed visible animation, correct screen placement,
+    ordinary application stacking and visible desktop icons.
+  GIF and animated WebP played with different captured frames; mpv reported
+    gif and webp_anim respectively. Playback is muted and loops.
+  Pause/resume verified via the owned player's IPC.
+  Stop removes the live player and retains native static poster wallpaper.
+  A regular Cinnamon background change stopped the player automatically.
+  The software renderer uses explicit Unix X11 transport to avoid inaccessible
+    SysV shared memory in private IPC namespaces; readiness requires advancing
+    playback rather than merely identifying a decoder.
+
+Startup and restoration
+  Isolated XDG state/config and GSettings keyfile backend verified login-entry
+    creation, service restart from saved assignments, playback restoration,
+    Stop removing the entry, and Undo restoring both playback and entry.
+  Live desktop tests restored all 14 real managed GSettings exactly to their
+    pre-test values. No test player or login entry remains active.
+
+Desktop transparency regression
+  23 themes, 230 actual GTK style-resolution checks passed: Nemo desktop and
+    blank-desktop windows/views/notebook stacks remain transparent in normal
+    and inactive states; ordinary application windows remain opaque.
+  Existing generated themes retain the v1.0.1 transparency repair and backups.
+
+Limits
+  Animated desktop backgrounds require X11 Cinnamon, mpv and ffmpeg.
+  Media must be local and remain at its selected path.
+  GPU availability and source resolution determine playback resource usage.
+  GTK4/libadwaita receives desktop color preferences; full widget recoloring
+    is not supplied by the companion GTK3 theme.
+
+Cinnarchy 1.2.0 additions — validated 2026-11-12 on Debian 13, Qt 6.8.2
+  QtTest: 27 passed, 0 failed.
+  The theme template regenerates all 23 bundled themes byte for byte
+    (bin/make-theme-template and generatorReproducesEveryBundledTheme).
+  Official fetch from github.com/omacom/omarchy: no themes newer than the
+    bundled 23 at the time of testing; local fixture repositories cover adding,
+    skipping invalid names, and updating on change.
+  Community install of omacom/omarchy-osaka-jade-theme from GitHub: listed with
+    5 backgrounds and Yaru-sage icons; its generated theme passed the GTK
+    desktop-transparency regression.
+  Community catalog: 382 entries parsed from omarchy.org/themes.
+  Clones refuse git option and transport-helper URLs, never prompt, and copy
+    no symbolic links or .git metadata.
+  Desktop shortcuts stay inactive while the Get more themes dialog is open.

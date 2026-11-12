@@ -1,0 +1,22 @@
+Omarchy Cinnamon
+Modified 2026-11-10.
+
+The Cinnamon shell stylesheet and its accompanying assets are derived from
+Cinnamon 6.6.9, copyright the Cinnamon/GNOME Shell contributors, distributed
+under the GNU General Public License version 2 or later. The original base
+stylesheet and assets are included in templates/cinnamon, with generated
+palette substitutions and additional styling in themes/*/cinnamon.
+Source: https://github.com/linuxmint/cinnamon/tree/master/data/theme
+
+The bundled palette data is copied from Omarchy 4.0.0.alpha, copyright
+David Heinemeier Hansson and contributors, under the MIT license. Its
+permission notice is reproduced in OMARCHY-LICENSE.
+Source: https://github.com/basecamp/omarchy/tree/master/themes
+
+The GTK stylesheet imports the installed GTK 3.24 Adwaita resource at runtime;
+GTK itself and the Adwaita resources are not redistributed in this bundle.
+
+The generator, scripts, additional styles and legacy window decoration
+template are licensed under GPL-2.0-or-later. See COPYING.
+No wallpaper, font, icon pack, cursor theme, or executable Omarchy configuration
+is redistributed. Existing icon and cursor settings are preserved by theme.py.

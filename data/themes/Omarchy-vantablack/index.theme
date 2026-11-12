@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Vantablack
+Comment=Omarchy Vantablack for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Vantablack
+GtkTheme=Omarchy-vantablack
+MetacityTheme=Omarchy-vantablack
+IconTheme=Adwaita
+CursorTheme=Adwaita

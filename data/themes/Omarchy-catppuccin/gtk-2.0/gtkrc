@@ -1,0 +1,25 @@
+# Omarchy Cinnamon GTK 2 fallback; uses GTK's built-in engine.
+gtk-color-scheme = "bg_color:#1e1e2e\nfg_color:#cdd6f4\nbase_color:#161622\ntext_color:#cdd6f4\nselected_bg_color:#89b4fa\nselected_fg_color:#1e1e2e\ntooltip_bg_color:#161622\ntooltip_fg_color:#cdd6f4"
+style "omarchy-default" {
+  xthickness = 2
+  ythickness = 2
+  bg[NORMAL] = "#1e1e2e"
+  bg[PRELIGHT] = "#414256"
+  bg[ACTIVE] = "#313244"
+  bg[SELECTED] = "#89b4fa"
+  bg[INSENSITIVE] = "#1e1e2e"
+  fg[NORMAL] = "#cdd6f4"
+  fg[PRELIGHT] = "#cdd6f4"
+  fg[ACTIVE] = "#cdd6f4"
+  fg[SELECTED] = "#1e1e2e"
+  fg[INSENSITIVE] = "#878ca5"
+  base[NORMAL] = "#161622"
+  base[SELECTED] = "#89b4fa"
+  base[ACTIVE] = "#45475a"
+  base[INSENSITIVE] = "#313244"
+  text[NORMAL] = "#cdd6f4"
+  text[SELECTED] = "#1e1e2e"
+  text[ACTIVE] = "#cdd6f4"
+  text[INSENSITIVE] = "#878ca5"
+}
+class "*" style "omarchy-default"

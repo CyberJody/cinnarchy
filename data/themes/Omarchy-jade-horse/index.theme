@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Omarchy · Jade Horse
+Comment=Omarchy Jade Horse for Cinnamon (dark)
+
+[X-GNOME-Metatheme]
+Name=Omarchy · Jade Horse
+GtkTheme=Omarchy-jade-horse
+MetacityTheme=Omarchy-jade-horse
+IconTheme=Adwaita
+CursorTheme=Adwaita

@@ -1,0 +1,9 @@
+/build/
+/pkgbuild/src/
+/pkgbuild/pkg/
+*.pkg.tar.zst
+*.tar.gz
+/pkgdeb/
+/pkgbuild/PKGBUILD
+*.deb
+__pycache__/
