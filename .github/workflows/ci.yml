@@ -22,9 +22,11 @@ jobs:
           - name: Debian 13 / LMDE 7 (Qt 6.8)
             image: debian:trixie
             target: debian13-lmde7
+            asset: cinnarchy-lmde-7-debian-13.deb
           - name: Ubuntu 24.04 / Linux Mint 22 (Qt 6.4)
             image: ubuntu:24.04
             target: ubuntu24.04-mint22
+            asset: cinnarchy-linux-mint-22.deb
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:
@@ -55,15 +57,14 @@ jobs:
       - name: Package
         run: |
           ./bin/package-deb app
-          cd pkgdeb
-          for file in cinnarchy_*_amd64.deb; do
-            mv "$file" "${file%_amd64.deb}_${{ matrix.target }}_amd64.deb"
-          done
-          dpkg-deb --info cinnarchy_*.deb
+          # One fixed name per system, so the README's download links always
+          # reach the newest release.
+          mv pkgdeb/cinnarchy_*_amd64.deb "pkgdeb/${{ matrix.asset }}"
+          dpkg-deb --info "pkgdeb/${{ matrix.asset }}"
       - uses: actions/upload-artifact@v4
         with:
           name: deb-${{ matrix.target }}
-          path: pkgdeb/cinnarchy_*.deb
+          path: pkgdeb/${{ matrix.asset }}
           if-no-files-found: error
 
   install:
@@ -78,9 +79,11 @@ jobs:
           - name: Debian 13 / LMDE 7
             image: debian:trixie
             target: debian13-lmde7
+            asset: cinnarchy-lmde-7-debian-13.deb
           - name: Ubuntu 24.04 / Linux Mint 22
             image: ubuntu:24.04
             target: ubuntu24.04-mint22
+            asset: cinnarchy-linux-mint-22.deb
     env:
       DEBIAN_FRONTEND: noninteractive
       GSETTINGS_BACKEND: memory
@@ -91,7 +94,7 @@ jobs:
       - name: Install the package on a system with nothing else
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends ./cinnarchy_*.deb
+          apt-get install -y --no-install-recommends ./cinnarchy-*.deb
       - name: Run the installed picker
         run: |
           cinnarchy --version
@@ -123,8 +126,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          ls dist/cinnarchy_"$version"-*_amd64.deb
-          (cd dist && sha256sum cinnarchy_*.deb > SHA256SUMS)
+          for package in dist/cinnarchy-*.deb; do
+            packaged="$(dpkg-deb -f "$package" Version)"
+            test "${packaged%-*}" = "$version" || { echo "::error::$package is $packaged, not $version"; exit 1; }
+          done
+          (cd dist && sha256sum cinnarchy-*.deb > SHA256SUMS)
           {
             awk -v heading="## $version " 'index($0, heading) == 1 {on = 1; next} /^## / {on = 0} on' CHANGELOG.md
             cat .github/release-notes-footer.md

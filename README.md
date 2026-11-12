@@ -16,23 +16,35 @@ Omarchy, Basecamp or Linux Mint.
 
 ## Install
 
-Download the installer for your system from the
-[latest release](https://github.com/CyberJody/cinnarchy/releases/latest):
+Cinnarchy is for the **Cinnamon** desktop.
 
-| Your system | File to download |
+**1. Download the installer for your system.**
+
+| Your system | Installer |
 | --- | --- |
-| Debian 13 or LMDE 7 | ends in `_debian13-lmde7_amd64.deb` |
-| Linux Mint 22.x or Ubuntu 24.04 | ends in `_ubuntu24.04-mint22_amd64.deb` |
+| Linux Mint 22, 22.1, 22.2 or 22.3 (Cinnamon edition) | [**Download for Linux Mint 22**](https://github.com/CyberJody/cinnarchy/releases/latest/download/cinnarchy-linux-mint-22.deb) |
+| LMDE 7, or Debian 13 with Cinnamon | [**Download for LMDE 7**](https://github.com/CyberJody/cinnarchy/releases/latest/download/cinnarchy-lmde-7-debian-13.deb) |
 
-Open the downloaded file with your package installer, or run
-`sudo apt install ./cinnarchy_*.deb` in the folder you saved it to. Then start
-**Omarchy Theme Picker** from the Cinnamon menu. Installing a newer release the
-same way upgrades it. On other systems, [build it from source](#build-from-source).
+Not sure which you have? Open the menu, type **System Info** and look at the
+first line.
 
-**Undo**, **Redo** and **Restore original** recover complete previous setups,
-including per-display image/video choices, playback state, wallpaper sizing, opacity, background colors,
-slideshow state and icons. History survives app restarts. A failed switch rolls
-back settings, and a recovery snapshot is saved before each change.
+**2. Open the downloaded file.** It is in your Downloads folder; double-click
+it and the package installer opens.
+
+**3. Click Install Package** and type your password when asked. The installer
+may list a few extra packages it needs; that is expected.
+
+**4. Open the menu and start Omarchy Theme Picker.** Pick a theme and click
+**Apply full theme**. **Restore original** brings back the look you had before.
+
+To update, download and install the newest installer the same way. To remove
+it, uninstall **cinnarchy** in Software Manager, or run `sudo apt remove cinnarchy`.
+
+The Linux Mint 22 installer also works on Ubuntu 24.04 with Cinnamon. Linux
+Mint 21 and older are not supported. From a terminal, the same install is
+`sudo apt install ./cinnarchy-*.deb`. Every version is on the
+[releases page](https://github.com/CyberJody/cinnarchy/releases); on other
+systems, [build it from source](#build-from-source).
 
 ## Multiple displays and animation
 
