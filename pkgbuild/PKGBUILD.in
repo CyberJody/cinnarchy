@@ -21,6 +21,5 @@ package() {
   install -Dm644 pkgbuild/cinnarchy.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/cinnarchy.svg"
   install -Dm644 README.md "$pkgdir/usr/share/doc/cinnarchy/README.md"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/cinnarchy/LICENSE"
-  install -Dm644 COPYING "$pkgdir/usr/share/licenses/cinnarchy/COPYING"
   install -Dm644 NOTICE "$pkgdir/usr/share/licenses/cinnarchy/NOTICE"
 }

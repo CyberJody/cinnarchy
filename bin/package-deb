@@ -34,15 +34,26 @@ ASSETS_VERSION = '4.5.0+intros' + INTROS_VERSION.split('-')[0].replace('.', '') 
 MAINTAINER = 'CyberJody <346445232+CyberJody@users.noreply.github.com>'
 DEB_REVISION = '1'  # bump when packaging or Debian-specific source changes
 
-# QML modules, Qt plugins and helpers loaded at run time, which
-# dpkg-shlibdeps cannot see from the binary's ELF dependencies.
-RUNTIME_DEPENDS = [
-    'qml6-module-qtquick', 'qml6-module-qtquick-controls', 'qml6-module-qtquick-layouts',
-    'qml6-module-qtquick-templates', 'qml6-module-qtquick-window', 'qml6-module-qtqml-workerscript',
-    'qml6-module-qtmultimedia', 'qt6-qpa-plugins', 'qt6-svg-plugins', 'qt6-image-formats-plugins',
-    'cinnamon', 'mpv', 'ffmpeg', 'xdg-desktop-portal', 'git',
+# QML modules and Qt plugins loaded at run time, which dpkg-shlibdeps cannot
+# see from the binary's ELF dependencies. The packages that hold them differ
+# between Qt releases, so each file's owner is looked up on the build system.
+RUNTIME_QML = [
+    'QtQml/qmldir', 'QtQml/Models/qmldir', 'QtQml/WorkerScript/qmldir',
+    'QtQuick/qmldir', 'QtQuick/Controls/qmldir', 'QtQuick/Controls/Material/qmldir',
+    'QtQuick/Layouts/qmldir', 'QtQuick/Templates/qmldir', 'QtQuick/Window/qmldir',
+    'QtMultimedia/qmldir',
 ]
-RECOMMENDS = [ASSETS_NAME, 'yaru-theme-icon', 'papirus-icon-theme', 'xdg-desktop-portal-xapp']
+RUNTIME_PLUGINS = [
+    'platforms/libqxcb.so', 'platforms/libqoffscreen.so',
+    'xcbglintegrations/libqxcb-glx-integration.so',
+    'imageformats/libqsvg.so', 'iconengines/libqsvgicon.so',
+    'imageformats/libqgif.so', 'imageformats/libqwebp.so',
+    'multimedia/lib*mediaplugin.so',
+]
+# Programs the picker runs, and the desktop it is for.
+RUNTIME_DEPENDS = ['cinnamon', 'mpv', 'ffmpeg', 'xdg-desktop-portal', 'git']
+RECOMMENDS = ['yaru-theme-icon', 'papirus-icon-theme', 'xdg-desktop-portal-xapp']
+SUGGESTS = [ASSETS_NAME]  # built locally; the picker can download backgrounds itself
 
 
 def run(*args, **kw):
@@ -83,6 +94,34 @@ def shlibdeps(binary):
     return [d.strip() for d in match.group(1).split(',')] if match else []
 
 
+def qt_runtime_depends():
+    """Packages that own the QML modules and plugins the picker loads."""
+    def query(name):
+        return Path(run('qmake6', '-query', name, capture_output=True, text=True).stdout.strip())
+    wanted = [(query('QT_INSTALL_QML'), RUNTIME_QML), (query('QT_INSTALL_PLUGINS'), RUNTIME_PLUGINS)]
+    packages, missing = set(), []
+    for base, patterns in wanted:
+        for pattern in patterns:
+            files = sorted(base.glob(pattern))
+            if not files:
+                missing.append(str(base / pattern))
+            for path in files:
+                owner = subprocess.run(['dpkg', '-S', str(path)], capture_output=True, text=True)
+                if owner.returncode:
+                    missing.append(str(path))
+                else:
+                    packages.add(owner.stdout.split(':')[0].strip())
+    if missing:
+        sys.exit('Qt files the picker needs are not installed from packages:\n  ' + '\n  '.join(missing))
+    return packages
+
+
+def merge_depends(shlibs, extra):
+    """One entry per package; dpkg-shlibdeps' versioned entries win."""
+    named = {d.split()[0] for d in shlibs}
+    return sorted(set(shlibs) | {name for name in extra if name not in named})
+
+
 def package_app():
     ver = version()
     binary = root / 'build/cinnarchy'
@@ -95,13 +134,17 @@ def package_app():
         install(root / 'pkgbuild/cinnarchy.desktop', stage / 'usr/share/applications/cinnarchy.desktop')
         install(root / 'pkgbuild/cinnarchy.svg', stage / 'usr/share/icons/hicolor/scalable/apps/cinnarchy.svg')
         doc = stage / 'usr/share/doc/cinnarchy'
-        for name in ('README.md', 'NOTICE', 'COPYING', 'LICENSE', 'OMARCHY-LICENSE'):
+        for name in ('README.md', 'NOTICE', 'LICENSE'):
             install(root / name, doc / name)
         (doc / 'copyright').write_text(
             'Cinnarchy (Omarchy Theme Picker for Cinnamon)\n'
-            'License: GPL-2.0-or-later (themes derived from Cinnamon) and MIT.\n'
-            'See COPYING, LICENSE, OMARCHY-LICENSE and NOTICE in this directory.\n')
-        depends = sorted(set(shlibdeps(stage / 'usr/bin/cinnarchy') + RUNTIME_DEPENDS))
+            'Source: https://github.com/CyberJody/cinnarchy\n'
+            'License: GPL-2.0-or-later. The full text is in LICENSE in this directory\n'
+            'and in /usr/share/common-licenses/GPL-2. NOTICE lists the material from\n'
+            'Cinnamon (GPL-2.0-or-later) and Omarchy (MIT) that the picker includes.\n')
+        (doc / 'copyright').chmod(0o644)
+        depends = merge_depends(shlibdeps(stage / 'usr/bin/cinnarchy'),
+                                qt_runtime_depends() | set(RUNTIME_DEPENDS))
         size = sum(p.stat().st_size for p in stage.rglob('*') if p.is_file()) // 1024
         (stage / 'DEBIAN').mkdir()
         (stage / 'DEBIAN/control').write_text(f"""Package: cinnarchy
@@ -111,6 +154,7 @@ Maintainer: {MAINTAINER}
 Installed-Size: {size}
 Depends: {', '.join(depends)}
 Recommends: {', '.join(RECOMMENDS)}
+Suggests: {', '.join(SUGGESTS)}
 Section: x11
 Priority: optional
 Homepage: https://github.com/CyberJody/cinnarchy
@@ -166,7 +210,7 @@ def package_assets():
             if relative.parts[0] in slugs:
                 install(path, dest / relative)
         doc = stage / f'usr/share/doc/{ASSETS_NAME}'
-        install(root / 'OMARCHY-LICENSE', doc / 'OMARCHY-LICENSE')
+        install(root / 'data/template/OMARCHY-LICENSE', doc / 'OMARCHY-LICENSE')
         (doc / 'copyright').write_text(
             f'Backgrounds and icon choices from Omarchy {OMARCHY_TAG} ({OMARCHY_REPO})\n'
             f'and omarchy-themes-intros {INTROS_VERSION} ({INTROS_URL}).\n'

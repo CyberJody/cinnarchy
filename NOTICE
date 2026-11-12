@@ -1,8 +1,22 @@
 Cinnarchy — Omarchy Theme Picker for Cinnamon
+Copyright (c) 2026 Cinnarchy contributors
+
+Cinnarchy is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 2 of the License, or (at your option) any later
+version. It is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. The full text of the license is in the LICENSE file.
 
 Cinnarchy is an independent project. It is not affiliated with or endorsed by
 Omarchy, Basecamp, 37signals or Linux Mint.
 
+
+Material from other projects
+============================
+
+Cinnamon (GNU GPL version 2 or later)
+-------------------------------------
 The Cinnamon shell stylesheet and its accompanying assets in data/themes and
 data/template are derived from the Cinnamon 6.6.9 default theme, copyright the
 Cinnamon/GNOME Shell contributors, under the GNU General Public License
@@ -10,18 +24,47 @@ version 2 or later. Palette colors and additional styling were substituted on
 2026-11-10.
 Source: https://github.com/linuxmint/cinnamon/tree/master/data/theme
 
+Omarchy, Omacut and Monologue (MIT)
+-----------------------------------
 The bundled palette data and icon theme names (data/themes/*/palette.json and
-manifest.json) are copied from Omarchy 4.5.0, copyright David Heinemeier Hansson and contributors,
-under the MIT license. Its permission notice is reproduced in OMARCHY-LICENSE.
-src/generator.cpp ports Omarchy's palette fallback rules and alacritty.toml
-reader (bin/omarchy-theme-color, bin/omarchy-theme-colors-from-alacritty)
-from the same MIT-licensed project.
+manifest.json) are copied from Omarchy 4.5.0, copyright David Heinemeier
+Hansson and contributors. src/generator.cpp ports Omarchy's palette fallback
+rules and alacritty.toml reader (bin/omarchy-theme-color,
+bin/omarchy-theme-colors-from-alacritty) from the same project. The Theme and
+Translator source templates are adapted from the Omarchy app templates, Omacut
+and Monologue, copyright David Heinemeier Hansson.
 Source: https://github.com/omacom/omarchy
 
+These parts are used under the MIT license:
+
+    Copyright (c) David Heinemeier Hansson
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+    The above copyright notice and this permission notice shall be
+    included in all copies or substantial portions of the Software.
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+GTK
+---
 The GTK stylesheet imports the installed GTK 3.24 Adwaita resource at runtime;
 GTK itself and the Adwaita resources are not redistributed.
 
-No wallpaper, font, icon pack or cursor theme is included in this repository.
-Wallpapers come from an installed Omarchy, from themes the user downloads, or
-from the omarchy-theme-backgrounds package that bin/package-deb builds locally
-from Omarchy's own repository.
+Wallpapers, fonts and icons
+---------------------------
+No wallpaper, font, icon pack or cursor theme is included in this repository
+or in the cinnarchy package. Wallpapers come from an installed Omarchy, from
+themes and backgrounds the user downloads, or from the
+omarchy-theme-backgrounds package that bin/package-deb builds locally from
+Omarchy's own repository. They remain the work of their respective artists.

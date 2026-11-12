@@ -9,6 +9,12 @@
   `cinnarchy apply` accepts `--speed` and `--repeat-after`.
 - After an upgrade, a live wallpaper started by the older version is handed
   over to the new player the next time it is changed.
+- Installer packages: each release now has a `.deb` for Debian 13 / LMDE 7 and
+  one for Linux Mint 22 / Ubuntu 24.04, built and install-tested by CI.
+- Licensing is easier to find: `LICENSE` is the GNU GPL version 2 text (the
+  project is GPL version 2 or later, as before) and `NOTICE` lists the
+  Cinnamon and Omarchy material with its MIT notice. The package no longer
+  recommends the locally built backgrounds package.
 
 ## 1.2.1 — 2026-11-12
 

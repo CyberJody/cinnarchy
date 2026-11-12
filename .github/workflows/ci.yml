@@ -1,5 +1,8 @@
 name: CI
 
+# Every push is built, tested and packaged for both systems, and each package
+# is installed on a clean system. Pushing a tag such as v1.3.0 also publishes
+# the packages as a GitHub release.
 on:
   push:
   pull_request:
@@ -9,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.name }}
+    name: Build · ${{ matrix.name }}
     runs-on: ubuntu-24.04
     container: ${{ matrix.image }}
     strategy:
@@ -18,8 +21,10 @@ jobs:
         include:
           - name: Debian 13 / LMDE 7 (Qt 6.8)
             image: debian:trixie
+            target: debian13-lmde7
           - name: Ubuntu 24.04 / Linux Mint 22 (Qt 6.4)
             image: ubuntu:24.04
+            target: ubuntu24.04-mint22
     env:
       DEBIAN_FRONTEND: noninteractive
     steps:
@@ -27,15 +32,17 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            git ca-certificates build-essential pkgconf qmake6 \
-            qt6-base-dev qt6-declarative-dev qt6-multimedia-dev qt6-svg-dev \
+            git ca-certificates build-essential dpkg-dev pkgconf qmake6 \
+            qt6-base-dev qt6-declarative-dev qt6-multimedia-dev \
             qml6-module-qtquick qml6-module-qtquick-controls qml6-module-qtquick-layouts \
             qml6-module-qtquick-templates qml6-module-qtquick-window \
             qml6-module-qtqml-workerscript qml6-module-qtmultimedia \
             libglib2.0-dev libx11-dev libxrandr-dev libxext-dev \
             ffmpeg mpv python3 python3-gi gir1.2-gtk-3.0 xvfb xauth
-          # Plugin packages whose names differ between releases.
-          for package in qt6-qpa-plugins qt6-svg-plugins qt6-image-formats-plugins; do
+          # Packages that exist under different names, or not at all, depending
+          # on the release. bin/package-deb fails if a file it needs is absent.
+          for package in qt6-svg-dev libqt6svg6-dev qt6-qpa-plugins qt6-svg-plugins \
+              qt6-image-formats-plugins qml6-module-qtqml qml6-module-qtqml-models; do
             apt-get install -y --no-install-recommends "$package" || echo "::notice::$package is not packaged here"
           done
       - uses: actions/checkout@v4
@@ -45,3 +52,83 @@ jobs:
         run: ./bin/test
       - name: GTK desktop-transparency regression
         run: xvfb-run -a python3 tests/gtk_desktop_regression.py
+      - name: Package
+        run: |
+          ./bin/package-deb app
+          cd pkgdeb
+          for file in cinnarchy_*_amd64.deb; do
+            mv "$file" "${file%_amd64.deb}_${{ matrix.target }}_amd64.deb"
+          done
+          dpkg-deb --info cinnarchy_*.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.target }}
+          path: pkgdeb/cinnarchy_*.deb
+          if-no-files-found: error
+
+  install:
+    name: Clean install · ${{ matrix.name }}
+    needs: build
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Debian 13 / LMDE 7
+            image: debian:trixie
+            target: debian13-lmde7
+          - name: Ubuntu 24.04 / Linux Mint 22
+            image: ubuntu:24.04
+            target: ubuntu24.04-mint22
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      GSETTINGS_BACKEND: memory
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: deb-${{ matrix.target }}
+      - name: Install the package on a system with nothing else
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ./cinnarchy_*.deb
+      - name: Run the installed picker
+        run: |
+          cinnarchy --version
+          test "$(cinnarchy list --json | grep -o '"slug"' | wc -l)" -ge 23
+          cinnarchy status --json
+          cinnarchy screenshot --select tokyo-night --output picker.png
+          test -s picker.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: picker-${{ matrix.target }}
+          path: picker.png
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build, install]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: deb-*
+          path: dist
+          merge-multiple: true
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          ls dist/cinnarchy_"$version"-*_amd64.deb
+          (cd dist && sha256sum cinnarchy_*.deb > SHA256SUMS)
+          {
+            awk -v heading="## $version " 'index($0, heading) == 1 {on = 1; next} /^## / {on = 0} on' CHANGELOG.md
+            cat .github/release-notes-footer.md
+          } > notes.md
+          gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 ||
+            gh release create "$GITHUB_REF_NAME" --verify-tag --title "Cinnarchy $version" --notes-file notes.md
+          gh release upload "$GITHUB_REF_NAME" dist/* --clobber

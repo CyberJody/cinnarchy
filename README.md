@@ -14,6 +14,21 @@ themes.
 Cinnarchy is an independent project, not affiliated with or endorsed by
 Omarchy, Basecamp or Linux Mint.
 
+## Install
+
+Download the installer for your system from the
+[latest release](https://github.com/CyberJody/cinnarchy/releases/latest):
+
+| Your system | File to download |
+| --- | --- |
+| Debian 13 or LMDE 7 | ends in `_debian13-lmde7_amd64.deb` |
+| Linux Mint 22.x or Ubuntu 24.04 | ends in `_ubuntu24.04-mint22_amd64.deb` |
+
+Open the downloaded file with your package installer, or run
+`sudo apt install ./cinnarchy_*.deb` in the folder you saved it to. Then start
+**Omarchy Theme Picker** from the Cinnamon menu. Installing a newer release the
+same way upgrades it. On other systems, [build it from source](#build-from-source).
+
 **Undo**, **Redo** and **Restore original** recover complete previous setups,
 including per-display image/video choices, playback state, wallpaper sizing, opacity, background colors,
 slideshow state and icons. History survives app restarts. A failed switch rolls
@@ -114,7 +129,7 @@ GTK 4/libadwaita applications receive Cinnamon's light/dark and accent preferenc
 libadwaita widget recoloring is outside the bundled GTK theme. Fonts and cursor
 settings have no per-palette values and are preserved.
 
-## Install or build
+## Build from source
 
 Requirements: Qt 6 base, declarative/Quick Controls, SVG and Multimedia;
 GLib/GIO; X11, XRandR and Xext; Cinnamon; mpv, ffmpeg, git and XDG desktop portal;
@@ -230,7 +245,7 @@ Sources and attribution: bundled palette data from
 [Omarchy](https://github.com/omacom/omarchy); Cinnamon themes derived from
 [Cinnamon's default theme](https://github.com/linuxmint/cinnamon/tree/master/data/theme);
 Theme/Translator templates adapted from Omacut and Monologue (David Heinemeier
-Hansson, MIT). See LICENSE, COPYING, OMARCHY-LICENSE and NOTICE.
+Hansson, MIT). See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ## Report a problem
 
@@ -247,3 +262,14 @@ Pull requests are welcome. Run `./bin/test` and
 bundled theme's styling, run `bin/make-theme-template` so downloaded themes get
 the same change; it fails unless the template reproduces every bundled theme.
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each release.
+
+## License
+
+Cinnarchy is free software under the
+[GNU General Public License, version 2 or later](LICENSE): you may use, study,
+share and change it, and versions you pass on must stay under the same license
+with their source available. It comes with no warranty.
+
+It includes material from Cinnamon (GPL version 2 or later) and Omarchy (MIT).
+[NOTICE](NOTICE) lists what comes from where. No wallpapers are included;
+downloaded backgrounds remain the work of their artists.
