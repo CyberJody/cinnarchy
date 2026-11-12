@@ -226,8 +226,34 @@ QJsonObject mpvCommand(const QString &socket,const QJsonArray &command,int timeo
 class DesktopService:public QObject {
     QString root;Display *display=nullptr;QLocalServer server;QTimer poll;QJsonObject config;QByteArray signature;QString error;
     QElapsedTimer externalChange;
+    // At login the desktop may not be ready for video yet; failed starts are retried.
+    int retries=0;QElapsedTimer retryWait;QByteArray retriedSignature;
     std::vector<std::unique_ptr<LiveWindow>> windows;std::unique_ptr<SettingsStore> settings=makeSettingsStore();
     void clear(){for(auto &w:windows){w->process.kill();w->process.waitForFinished(1000);if(display&&w->window)XDestroyWindow(display,w->window);}windows.clear();if(display)XFlush(display);}
+    // Cinnamon redirects a window into its compositor when it starts managing
+    // it. A player that renders before then can stay invisible, so wait for
+    // the window manager's WM_STATE (at most 1.5 s).
+    // Nemo will not draw desktop icons while another program has a desktop
+    // window, unless its WM_CLASS is listed in ignored-desktop-handlers.
+    void allowDesktopIcons() {
+        const QString schema="org.nemo.desktop",key="ignored-desktop-handlers";
+        const auto current=settings->read(schema,key);
+        if(current.isEmpty()||current.contains("cinnarchywallpaper",Qt::CaseInsensitive))return;
+        QStringList items;auto it=QRegularExpression("'((?:[^'\\\\]|\\\\.)*)'").globalMatch(current);
+        while(it.hasNext())items<<"'"+it.next().captured(1)+"'";
+        items<<"'CinnarchyWallpaper'";QString ignored;
+        if(settings->write(schema,key,"["+items.join(", ")+"]",ignored))settings->sync();
+    }
+    void waitUntilManaged(Window window) {
+        const Atom state=XInternAtom(display,"WM_STATE",False);QElapsedTimer wait;wait.start();
+        while(wait.elapsed()<1500) {
+            XSync(display,False);Atom type=0;int format=0;unsigned long count=0,after=0;unsigned char *data=nullptr;
+            const bool managed=XGetWindowProperty(display,window,state,0,2,False,state,&type,&format,&count,&after,&data)==Success&&type==state&&count>0;
+            if(data)XFree(data);
+            if(managed){QThread::msleep(100);return;}
+            QThread::msleep(20);
+        }
+    }
     void lower(){for(auto &w:windows)if(w->window)XLowerWindow(display,w->window);if(display)XFlush(display);}
     bool load() {
         const auto next=Wallpapers::read(Wallpapers::configurationPath(root));const auto sig=QJsonDocument(next).toJson(QJsonDocument::Compact);
@@ -261,6 +287,7 @@ class DesktopService:public QObject {
             XStoreName(display,live->window,"Omarchy animated wallpaper");
             XShapeCombineRectangles(display,live->window,ShapeInput,0,0,nullptr,0,ShapeSet,Unsorted);
             XMapWindow(display,live->window);XLowerWindow(display,live->window);XFlush(display);
+            waitUntilManaged(live->window);
             live->socket=Wallpapers::socketPath(root)+"-mpv-"+QString::number(windows.size());QFile::remove(live->socket);
             auto *player=live.get();
             connect(&live->process,&QProcess::readyReadStandardError,this,[player]{player->stderrTail=(player->stderrTail+player->process.readAllStandardError()).right(4096);});
@@ -285,6 +312,8 @@ class DesktopService:public QObject {
                     const auto position=reply.value("data").toDouble();
                     if(firstPosition<0)firstPosition=position;
                     if(config.value("paused").toBool()||qAbs(position-firstPosition)>.025){ready=true;break;}
+                    // A short clip may already rest on its last frame before a repeat.
+                    if(mpvCommand(live->socket,{"get_property","eof-reached"},350).value("data").toBool()){ready=true;break;}
                 }
                 live->process.waitForReadyRead(70);
             }
@@ -314,6 +343,7 @@ public:
                 client->write(QJsonDocument(QJsonObject{{"ok",error.isEmpty()},{"error",error},{"players",int(windows.size())},{"active",config.value("active")},{"version",QCoreApplication::applicationVersion()}}).toJson(QJsonDocument::Compact)+'\n');client->flush();client->disconnectFromServer();
             });connect(client,&QLocalSocket::disconnected,client,&QObject::deleteLater);
         }});
+        allowDesktopIcons();
         load();poll.setInterval(400);connect(&poll,&QTimer::timeout,this,[this]{
             load();
             if(!config.value("active").toBool()){QCoreApplication::quit();return;}
@@ -346,7 +376,17 @@ public:
             if(display){bool mapped=false;while(XPending(display)){XEvent event;XNextEvent(display,&event);mapped|=event.type==MapNotify;}if(mapped)lower();}
             for(auto &w:windows)if(w->process.state()!=QProcess::NotRunning)w->loop.advance(config.value("paused").toBool());
             for(auto &w:windows)if(w->process.state()==QProcess::NotRunning){error=tr("An animated wallpaper player stopped.");QString ignored;Wallpapers::save(root+"/wallpaper-status.json",{{"ok",false},{"error",error}},ignored);}
+            retry();
         });poll.start();
+    }
+    void retry() {
+        if(error.isEmpty()||!config.value("active").toBool()){if(error.isEmpty())retries=0;retryWait.invalidate();return;}
+        if(signature!=retriedSignature){retriedSignature=signature;retries=0;}
+        if(retries>=8)return;
+        if(!retryWait.isValid()){retryWait.start();return;}
+        if(retryWait.elapsed()<3000*(retries+1))return;
+        ++retries;retryWait.invalidate();
+        const auto wanted=signature;clear();signature.clear();load();retriedSignature=wanted;
     }
     ~DesktopService() override{clear();server.close();if(display)XCloseDisplay(display);}
 };

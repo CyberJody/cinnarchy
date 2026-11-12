@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.1 — 2026-11-12
+
+- Animated backgrounds now come back after logging in even when the desktop is
+  still starting: a player that cannot start is retried for about two
+  minutes instead of giving up. Found on a fresh Linux Mint 22.3 install.
+- Desktop icons keep working while an animated background plays. Nemo treated
+  the video window as another desktop program and skipped drawing icons when
+  it started after the video; Cinnarchy now adds its window to Nemo's
+  `ignored-desktop-handlers` setting.
+- Each player starts only after Cinnamon has taken charge of its window, to
+  stop one display staying black while another plays.
+
 ## 1.3.0 — 2026-11-12
 
 - Video controls for animated backgrounds: **Speed** from 0.25× to 2× and

@@ -24,7 +24,7 @@ int main(int argc,char **argv) {
     const bool gui=raw.isEmpty() || raw.first()=="open" || raw.first()=="wallpaper-service";
     if(!gui) {qputenv("QT_QPA_PLATFORM","offscreen");qputenv("QT_QUICK_BACKEND","software");}
     QGuiApplication app(argc,argv);
-    app.setApplicationName("cinnarchy");app.setApplicationVersion("1.3.0");app.setOrganizationName("Cinnarchy");
+    app.setApplicationName("cinnarchy");app.setApplicationVersion("1.3.1");app.setOrganizationName("Cinnarchy");
     app.setDesktopFileName("cinnarchy");app.setWindowIcon(QIcon(":/cinnarchy.svg"));
     QQuickStyle::setStyle("Material");
     QCommandLineParser parser;

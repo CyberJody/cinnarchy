@@ -76,6 +76,9 @@ managed `~/.config/autostart/cinnarchy-wallpaper.desktop` entry. Choosing a
 wallpaper in Cinnamon’s regular Backgrounds tool stops the live player and
 returns control to Cinnamon. Undo/Redo/Restore include wallpaper assignments.
 Changing monitor layout rebuilds the combined background for connected screens.
+To keep desktop icons visible over the video, the player adds its window class
+(`CinnarchyWallpaper`) to Nemo's `org.nemo.desktop ignored-desktop-handlers`
+setting.
 
 ## Desktop transparency repair
 
@@ -167,7 +170,7 @@ python3 tests/gtk_desktop_regression.py
 The user installer places the binary in `~/.local/bin/cinnarchy`, with a
 Cinnamon menu entry and icon under your user data directory. It does not
 require administrator access. For an Arch package, `./bin/package` creates
-`pkgbuild/cinnarchy-1.3.0-1-x86_64.pkg.tar.zst`; `./bin/install` builds and
+`pkgbuild/cinnarchy-1.3.1-1-x86_64.pkg.tar.zst`; `./bin/install` builds and
 installs it through makepkg/pacman.
 
 ### Debian 13 (trixie)
