@@ -10,6 +10,7 @@
 #include <QQuickStyle>
 #include <QQuickWindow>
 #include <QSaveFile>
+#include <QScreen>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <cstdio>
@@ -23,7 +24,7 @@ int main(int argc,char **argv) {
     const bool gui=raw.isEmpty() || raw.first()=="open" || raw.first()=="wallpaper-service";
     if(!gui) {qputenv("QT_QPA_PLATFORM","offscreen");qputenv("QT_QUICK_BACKEND","software");}
     QGuiApplication app(argc,argv);
-    app.setApplicationName("cinnarchy");app.setApplicationVersion("1.2.0");app.setOrganizationName("Cinnarchy");
+    app.setApplicationName("cinnarchy");app.setApplicationVersion("1.2.1");app.setOrganizationName("Cinnarchy");
     app.setDesktopFileName("cinnarchy");app.setWindowIcon(QIcon(":/cinnarchy.svg"));
     QQuickStyle::setStyle("Material");
     QCommandLineParser parser;
@@ -45,6 +46,7 @@ int main(int argc,char **argv) {
     parser.addOption({"layout","Read a display layout JSON array for isolated testing","path"});
     parser.addOption({"url","fetch: install a community theme from its git repository","git-url"});
     parser.addOption({"community","fetch: list the community themes on omarchy.org"});
+    parser.addOption({"backgrounds","fetch: download Omarchy's backgrounds for built-in themes that have none"});
     parser.addOption({"repo","fetch: official Omarchy repository to read themes from","git-url",ThemeFetch::officialRepo});
     parser.addOption({"omarchy-themes","Use another folder for downloaded Omarchy themes","path"});
     parser.process(app);
@@ -83,7 +85,8 @@ int main(int argc,char **argv) {
             return list.isEmpty()?1:0;
         }
         const auto result=parser.isSet("url")?ThemeFetch::installRepository(paths.fetchPaths(),parser.value("url"))
-                                            :ThemeFetch::syncOfficial(paths.fetchPaths(),parser.value("repo"));
+                         :parser.isSet("backgrounds")?ThemeFetch::downloadBackgrounds(paths.fetchPaths(),{},parser.value("repo"))
+                         :ThemeFetch::syncOfficial(paths.fetchPaths(),parser.value("repo"));
         print(result.toJson());
         if(!result.ok) std::fprintf(stderr,"%s\n",result.error.toUtf8().constData());
         return result.ok?0:1;
@@ -136,6 +139,11 @@ int main(int argc,char **argv) {
     engine.rootContext()->setContextProperty("backend",&backend);
     engine.rootContext()->setContextProperty("theme",&theme);
     engine.rootContext()->setContextProperty("translator",&translator);
+    if(command=="open") if(const auto *screen=QGuiApplication::primaryScreen()) {
+        // Open inside the screen on small laptops; the options area scrolls when short.
+        const QSize room=screen->availableSize()-QSize(24,64);
+        if(room.width()>0&&room.height()>0) engine.setInitialProperties({{"width",qMin(1180,room.width())},{"height",qMin(960,room.height())}});
+    }
     engine.load(QUrl("qrc:/Main.qml"));if(engine.rootObjects().isEmpty()) return 1;
     backend.setWindow(qobject_cast<QQuickWindow*>(engine.rootObjects().first()));
     if(command=="screenshot") {

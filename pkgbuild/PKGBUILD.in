@@ -1,5 +1,5 @@
 pkgname=cinnarchy
-pkgver=1.2.0
+pkgver=1.2.1
 pkgrel=1
 pkgdesc='Omarchy full-theme picker for Cinnamon with wallpaper previews and undo'
 arch=('x86_64')

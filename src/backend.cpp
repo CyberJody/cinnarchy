@@ -53,6 +53,8 @@ PickerPaths PickerPaths::defaults() {
 Backend::Backend(QObject *parent, PickerPaths paths, SettingsStore *store,FilePicker *picker)
     : QObject(parent),m_paths(std::move(paths)),m_store(store) {
     if(!m_store) {m_ownedStore=makeSettingsStore();m_store=m_ownedStore.get();}
+    // Downloaded themes must be found again, wherever they were told to go.
+    if(!m_paths.userThemeRoot.isEmpty()&&!m_paths.stockRoots.contains(m_paths.userThemeRoot)) m_paths.stockRoots<<m_paths.userThemeRoot;
     m_picker=picker?picker:new PortalFilePicker(this);
     connect(m_picker,&FilePicker::chosen,this,&Backend::addMedia);
     connect(m_picker,&FilePicker::failed,this,&Backend::fail);
@@ -82,7 +84,27 @@ Backend::Backend(QObject *parent, PickerPaths paths, SettingsStore *store,FilePi
 }
 
 Backend::~Backend() {
-    if(m_worker) m_worker->wait();
+    // A download in progress is stopped rather than keeping the closed picker alive.
+    if(m_worker) {ThemeFetch::requestCancel(true);m_worker->wait();ThemeFetch::requestCancel(false);delete m_worker;}
+}
+QString Backend::version() const {return QCoreApplication::applicationVersion();}
+int Backend::themesWithoutBackgrounds() const {
+    int count=0;
+    for(const auto &t:m_themes) if(t.toMap().value("bundled").toBool()&&t.toMap().value("wallpapers").toList().isEmpty()) ++count;
+    return count;
+}
+void Backend::downloadBackgrounds(bool everyTheme) {
+    if(m_worker) return;
+    const auto paths=fetchPaths();const QStringList slugs=everyTheme?QStringList():QStringList{m_slug};
+    m_message=everyTheme?tr("Downloading Omarchy's backgrounds for every theme. This can take a few minutes…"):tr("Downloading Omarchy's backgrounds for %1…").arg(selected().value("title").toString());
+    m_error=false;emit stateChanged();
+    const QString nothing=tr("Omarchy has no backgrounds to download for this theme.");
+    runFetch([this,paths,slugs,nothing,repo=m_paths.officialRepo]{
+        auto result=ThemeFetch::downloadBackgrounds(paths,slugs,repo);
+        // Say so plainly when Omarchy has nothing for this theme.
+        if(result.ok&&result.backgrounds.isEmpty()&&result.skipped.isEmpty()){result.ok=false;result.error=nothing;}
+        QMetaObject::invokeMethod(this,[this,result]{finishFetch(result);},Qt::QueuedConnection);
+    });
 }
 ThemeFetch::Paths PickerPaths::fetchPaths() const {
     ThemeFetch::Paths paths{themeRoot,userThemeRoot.isEmpty()?stockRoots.value(stockRoots.size()-1):userThemeRoot,stockRoots};
@@ -107,7 +129,7 @@ void Backend::fetchOfficial() {
     if(m_worker) return;
     const auto paths=fetchPaths();
     m_message=tr("Checking github.com/omacom/omarchy for new themes…");m_error=false;emit stateChanged();
-    runFetch([this,paths]{const auto result=ThemeFetch::syncOfficial(paths);QMetaObject::invokeMethod(this,[this,result]{finishFetch(result);},Qt::QueuedConnection);});
+    runFetch([this,paths,repo=m_paths.officialRepo]{const auto result=ThemeFetch::syncOfficial(paths,repo);QMetaObject::invokeMethod(this,[this,result]{finishFetch(result);},Qt::QueuedConnection);});
 }
 void Backend::installTheme(const QString &url) {
     if(m_worker) return;
@@ -154,12 +176,15 @@ void Backend::finishFetch(const ThemeFetch::Result &result) {
         if(!result.added.isEmpty()) parts<<tr("Added %1.").arg(titles(result.added));
         if(!result.updated.isEmpty()) parts<<tr("Updated %1.").arg(titles(result.updated));
         if(!result.generated.isEmpty()) parts<<tr("Prepared %1 for Cinnamon.").arg(titles(result.generated));
+        if(!result.backgrounds.isEmpty()) parts<<tr("Downloaded backgrounds for %1.").arg(result.backgrounds.size()>3?tr("%n themes","",result.backgrounds.size()):titles(result.backgrounds));
         const bool nothing=parts.isEmpty();
         if(nothing) parts<<tr("No new themes found. You have every official Omarchy theme.");
         if(!result.skipped.isEmpty()) parts<<tr("Skipped: %1").arg(result.skipped.join("; "));
         m_message=parts.join(' ');m_error=nothing&&!result.skipped.isEmpty();
         const auto first=!result.added.isEmpty()?result.added.first():!result.updated.isEmpty()?result.updated.first():result.generated.value(0);
         if(!first.isEmpty()) selectTheme(first);
+        // Show the selected theme's own background now that it has one.
+        if(result.backgrounds.contains(m_slug)) selectWallpaper(0);
     }
     emit stateChanged();emit fetchChanged();emit fetchFinished();
 }
@@ -246,8 +271,9 @@ QVariantList Backend::wallpapers(const QString &slug) const {
     return result;
 }
 
-QString Backend::iconFor(const QString &slug,const QString &mode,QString &note) const {
-    QString requested;
+QString Backend::iconFor(const QString &slug,const QString &mode,const QString &bundledChoice,QString &note) const {
+    // Omarchy 4.5.0's choice for a built-in theme, unless an installed theme names its own.
+    QString requested=bundledChoice;
     for(const auto &root:m_paths.stockRoots) {
         QFile f(root+"/"+slug+"/icons.theme");
         if(f.open(QIODevice::ReadOnly)) requested=QString::fromUtf8(f.readAll()).trimmed();
@@ -284,7 +310,7 @@ void Backend::reload() {
     QFile manifest(":/themes/manifest.json");
     if(!manifest.open(QIODevice::ReadOnly)) {fail(tr("The bundled theme catalog is missing."));return;}
     for(const auto &value:QJsonDocument::fromJson(manifest.readAll()).array()) {
-        auto map=value.toObject().toVariantMap(); found.insert(map.value("slug").toString(),map);
+        auto map=value.toObject().toVariantMap();map["bundled"]=true;found.insert(map.value("slug").toString(),map);
     }
     for(const auto &name:QDir(m_paths.themeRoot).entryList({"Omarchy-*"},QDir::Dirs|QDir::NoDotAndDotDot)) {
         const auto value=readObject(m_paths.themeRoot+"/"+name+"/palette.json");
@@ -299,7 +325,7 @@ void Backend::reload() {
     m_themes.clear();
     for(auto it=found.begin();it!=found.end();++it) {
         auto map=it.value();const auto slug=it.key();
-        QString note;map["icons"]=iconFor(slug,map.value("mode").toString(),note);map["iconNote"]=note;
+        QString note;map["icons"]=iconFor(slug,map.value("mode").toString(),map.value("icon_theme").toString(),note);map["iconNote"]=note;
         map["wallpapers"]=wallpapers(slug);
         map["thumbnail"]=map.value("wallpapers").toList().value(0).toMap().value("url");
         m_themes<<map;
@@ -329,7 +355,10 @@ void Backend::selectTheme(const QString &slug) {
             const auto url=list[i].toMap().value("url").toString();
             if(url==chosen || (chosen.isEmpty() && activeName()==selected().value("name").toString() && url==activeUri)) m_wallpaperIndex=i;
         }
-        chooseUrl(list.value(m_wallpaperIndex).toMap().value("url").toString());return;
+        // A theme without backgrounds of its own keeps the ones already chosen.
+        if(list.isEmpty()) syncSelection();
+        else chooseUrl(list.value(m_wallpaperIndex).toMap().value("url").toString());
+        return;
     }
 }
 void Backend::selectWallpaper(int i) {
@@ -467,7 +496,11 @@ bool Backend::applyNow() {
     m_themeFilesChanged=false;
     if(selected().isEmpty()) {fail(tr("Choose a theme first."));return false;}
     if(!m_store->has(shell,"name") || !m_store->has(ui,"gtk-theme")) {fail(tr("Cinnamon desktop settings are unavailable. Run this in your Cinnamon session."));return false;}
-    if(m_useWallpaper){QString error;m_prepared=Wallpapers::prepare(m_displays,m_assignments,m_paths.stateRoot,error);if(m_prepared.isEmpty()){fail(error);return false;}}
+    if(m_useWallpaper){
+        bool chosen=false;for(const auto &choice:m_assignments)chosen|=!choice.toObject().value("url").toString().isEmpty();
+        if(!chosen){fail(tr("No background is chosen yet. Download this theme's backgrounds, add your own image, or turn off Apply wallpaper."));return false;}
+        QString error;m_prepared=Wallpapers::prepare(m_displays,m_assignments,m_paths.stateRoot,error);if(m_prepared.isEmpty()){fail(error);return false;}
+    }
     if(m_useIcons && selected().value("icons").toString().isEmpty()) {fail(tr("No matching icon pack is installed. Turn off Apply matching icons to continue."));return false;}
     if(!ensureInstalled(selected())) return false;
     const auto oldOriginal=m_original,oldUndo=m_undo,oldRedo=m_redo;const auto oldChoices=m_choices;

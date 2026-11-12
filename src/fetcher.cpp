@@ -16,10 +16,16 @@
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QUrl>
+#include <QElapsedTimer>
+#include <atomic>
+#include <memory>
+#include <csignal>
+#include <unistd.h>
 
 namespace ThemeFetch {
 namespace {
 const QString marker = ".cinnarchy-source";
+std::atomic_bool cancelled{false};
 
 QSet<QString> bundledSlugs() {
     QSet<QString> slugs;
@@ -41,6 +47,7 @@ bool writeJson(const QString &path, const QJsonObject &value) {
 // git never prompts here, and a clone writes no symbolic links: a theme is
 // only colours, images and an icon name.
 bool git(const QStringList &args, QString &error, QString *output = nullptr, int timeoutMs = 600000) {
+    if (cancelled) { error = QObject::tr("The download was cancelled."); return false; }
     QProcess process;
     auto env = QProcessEnvironment::systemEnvironment();
     env.insert("GIT_TERMINAL_PROMPT", "0");
@@ -49,16 +56,22 @@ bool git(const QStringList &args, QString &error, QString *output = nullptr, int
     env.insert("GIT_SSH_COMMAND", "ssh -oBatchMode=yes");
     env.insert("LC_ALL", "C");
     process.setProcessEnvironment(env);
+    // git downloads through helper processes; its own group lets a cancel stop them all.
+    process.setChildProcessModifier([] { ::setpgid(0, 0); });
     process.start("git", QStringList{"-c", "core.symlinks=false", "-c", "protocol.ext.allow=never",
                                      "-c", "protocol.fd.allow=never", "-c", "advice.detachedHead=false"} + args);
     if (!process.waitForStarted(10000)) {
         error = QObject::tr("git is not installed. Install git to fetch themes.");
         return false;
     }
-    if (!process.waitForFinished(timeoutMs)) {
+    QElapsedTimer elapsed;
+    elapsed.start();
+    while (process.state() != QProcess::NotRunning && !process.waitForFinished(150)) {
+        if (!cancelled && elapsed.elapsed() < timeoutMs) continue;
+        if (process.processId() > 0) ::kill(-pid_t(process.processId()), SIGKILL);
         process.kill();
         process.waitForFinished(2000);
-        error = QObject::tr("Downloading themes timed out.");
+        error = cancelled ? QObject::tr("The download was cancelled.") : QObject::tr("Downloading themes timed out.");
         return false;
     }
     if (output) *output = QString::fromUtf8(process.readAllStandardOutput());
@@ -113,6 +126,53 @@ bool generateFor(const Paths &paths, const QString &slug, const QString &themeDi
 bool hasCinnamonTheme(const Paths &paths, const QString &slug) {
     return QFileInfo::exists(paths.themeRoot + "/Omarchy-" + slug + "/palette.json");
 }
+bool hasBackgrounds(const Paths &paths, const QString &slug) {
+    QStringList roots = paths.stockRoots;
+    if (!roots.contains(paths.userThemeRoot)) roots << paths.userThemeRoot;
+    for (const auto &root : roots)
+        if (QDirIterator(root + "/" + slug + "/backgrounds", QDir::Files, QDirIterator::Subdirectories).hasNext()) return true;
+    return false;
+}
+
+// A blobless sparse clone of the official repository: listing its themes
+// downloads nothing, and checkout() fetches only the folders it is given.
+struct Official {
+    std::unique_ptr<QTemporaryDir> temp;
+    QString repo, clone, commit;
+    QStringList names;
+    bool open(const Paths &paths, const QString &repository, QString &error) {
+        repo = repository;
+        if (!QDir().mkpath(paths.userThemeRoot)) { error = QObject::tr("Cannot create %1").arg(paths.userThemeRoot); return false; }
+        temp = std::make_unique<QTemporaryDir>(paths.userThemeRoot + "/.cinnarchy-fetch-XXXXXX");
+        if (!temp->isValid()) { error = QObject::tr("Cannot stage the theme files."); return false; }
+        clone = temp->path() + "/omarchy";
+        QString listing;
+        if (!git({"clone", "--quiet", "--depth", "1", "--filter=blob:none", "--sparse", "--", repo, clone}, error)
+            || !git({"-C", clone, "ls-tree", "-d", "--name-only", "HEAD", "themes/"}, error, &listing)
+            || !git({"-C", clone, "rev-parse", "HEAD"}, error, &commit))
+            return false;
+        commit = commit.trimmed();
+        for (const auto &line : listing.split('\n', Qt::SkipEmptyParts)) names << line.mid(QString("themes/").size());
+        return true;
+    }
+    bool tree(const QString &name, QString &hash, QString &error) const {
+        if (!git({"-C", clone, "rev-parse", "HEAD:themes/" + name}, error, &hash)) return false;
+        hash = hash.trimmed();
+        return true;
+    }
+    bool checkout(const QStringList &wanted, QString &error) const {
+        if (wanted.isEmpty()) return true;
+        QStringList folders;
+        for (const auto &name : wanted) folders << "themes/" + name;
+        return git(QStringList{"-C", clone, "sparse-checkout", "set"} + folders, error);
+    }
+    QString folder(const QString &name) const { return clone + "/themes/" + name; }
+    QJsonObject origin(const QString &name, const QString &treeHash) const {
+        return {{"repository", repo}, {"commit", commit}, {"path", "themes/" + name}, {"tree", treeHash},
+                {"fetched", QDateTime::currentDateTimeUtc().toString(Qt::ISODate)}};
+    }
+};
+
 bool installedAnywhere(const Paths &paths, const QString &slug) {
     for (const auto &root : paths.stockRoots)
         if (QFileInfo(root + "/" + slug).isDir()) return true;
@@ -123,7 +183,8 @@ QString now() { return QDateTime::currentDateTimeUtc().toString(Qt::ISODate); }
 
 QJsonObject Result::toJson() const {
     return {{"ok", ok}, {"error", error}, {"added", QJsonArray::fromStringList(added)}, {"updated", QJsonArray::fromStringList(updated)},
-            {"generated", QJsonArray::fromStringList(generated)}, {"skipped", QJsonArray::fromStringList(skipped)}};
+            {"generated", QJsonArray::fromStringList(generated)}, {"skipped", QJsonArray::fromStringList(skipped)},
+            {"backgrounds", QJsonArray::fromStringList(backgrounds)}};
 }
 
 bool safeUrl(const QString &url, QString &error) {
@@ -181,27 +242,16 @@ Result generateMissing(const Paths &paths) {
 Result syncOfficial(const Paths &paths, const QString &repo) {
     Result result;
     auto failed = [&](const QString &error) { result.ok = false; result.error = error; return result; };
-    if (!QDir().mkpath(paths.userThemeRoot)) return failed(QObject::tr("Cannot create %1").arg(paths.userThemeRoot));
-    QTemporaryDir temp(paths.userThemeRoot + "/.cinnarchy-fetch-XXXXXX");
-    if (!temp.isValid()) return failed(QObject::tr("Cannot stage the theme files."));
-    const QString clone = temp.path() + "/omarchy";
-    QString error, listing, commit;
-    // A blobless sparse clone downloads only the folders of themes we need.
-    if (!git({"clone", "--quiet", "--depth", "1", "--filter=blob:none", "--sparse", "--", repo, clone}, error)
-        || !git({"-C", clone, "ls-tree", "-d", "--name-only", "HEAD", "themes/"}, error, &listing)
-        || !git({"-C", clone, "rev-parse", "HEAD"}, error, &commit))
-        return failed(error);
-    commit = commit.trimmed();
+    Official official;
+    QString error;
+    if (!official.open(paths, repo, error)) return failed(error);
     const auto bundled = bundledSlugs();
     QStringList wanted;
     QHash<QString, QString> trees;
-    for (const auto &line : listing.split('\n', Qt::SkipEmptyParts)) {
-        const QString name = line.mid(QString("themes/").size());
+    for (const auto &name : official.names) {
         if (!ThemeGenerator::validSlug(name)) { result.skipped << name; continue; }
         if (bundled.contains(name)) continue;
-        QString tree;
-        if (!git({"-C", clone, "rev-parse", "HEAD:themes/" + name}, error, &tree)) return failed(error);
-        trees[name] = tree.trimmed();
+        if (!official.tree(name, trees[name], error)) return failed(error);
         const auto origin = readJson(paths.userThemeRoot + "/" + name + "/" + marker);
         if (!origin.isEmpty()) {
             if (origin.value("tree").toString() == trees[name] && hasCinnamonTheme(paths, name)) continue;
@@ -210,19 +260,13 @@ Result syncOfficial(const Paths &paths, const QString &repo) {
             wanted << name;
         }
     }
-    if (!wanted.isEmpty()) {
-        QStringList folders;
-        for (const auto &name : wanted) folders << "themes/" + name;
-        if (!git(QStringList{"-C", clone, "sparse-checkout", "set", "--"} + folders, error)) return failed(error);
-    }
+    if (!official.checkout(wanted, error)) return failed(error);
     for (const auto &name : wanted) {
-        const QString source = clone + "/themes/" + name;
         const bool update = QFileInfo::exists(paths.userThemeRoot + "/" + name + "/" + marker);
-        const QJsonObject origin{{"repository", repo}, {"commit", commit}, {"path", "themes/" + name},
-                                 {"tree", trees[name]}, {"fetched", now()}};
+        const QJsonObject origin = official.origin(name, trees[name]);
         QString problem;
-        if (ThemeGenerator::readThemeColors(source, problem).isEmpty()
-            || !installFolder(paths, name, source, origin, problem)
+        if (ThemeGenerator::readThemeColors(official.folder(name), problem).isEmpty()
+            || !installFolder(paths, name, official.folder(name), origin, problem)
             || !generateFor(paths, name, paths.userThemeRoot + "/" + name, origin, problem)) {
             result.skipped << name + ": " + problem;
             continue;
@@ -234,6 +278,48 @@ Result syncOfficial(const Paths &paths, const QString &repo) {
     result.skipped += local.skipped;
     return result;
 }
+
+QStringList missingBackgrounds(const Paths &paths) {
+    QStringList missing;
+    for (const auto &slug : bundledSlugs())
+        if (!hasBackgrounds(paths, slug)) missing << slug;
+    missing.sort();
+    return missing;
+}
+
+Result downloadBackgrounds(const Paths &paths, const QStringList &slugs, const QString &repo) {
+    Result result;
+    auto failed = [&](const QString &error) { result.ok = false; result.error = error; return result; };
+    QStringList wanted;
+    for (const auto &slug : missingBackgrounds(paths))
+        if (slugs.isEmpty() || slugs.contains(slug)) wanted << slug;
+    if (wanted.isEmpty()) return result;
+    Official official;
+    QString error;
+    if (!official.open(paths, repo, error)) return failed(error);
+    QHash<QString, QString> trees;
+    for (auto it = wanted.begin(); it != wanted.end();) {
+        const QString target = paths.userThemeRoot + "/" + *it;
+        // A folder of the user's own is never replaced.
+        const bool theirs = QFileInfo::exists(target) && !QFileInfo::exists(target + "/" + marker);
+        if (!official.names.contains(*it) || theirs) {
+            result.skipped << *it;
+            it = wanted.erase(it);
+            continue;
+        }
+        if (!official.tree(*it, trees[*it], error)) return failed(error);
+        ++it;
+    }
+    if (!official.checkout(wanted, error)) return failed(error);
+    for (const auto &slug : wanted) {
+        QString problem;
+        if (installFolder(paths, slug, official.folder(slug), official.origin(slug, trees[slug]), problem)) result.backgrounds << slug;
+        else result.skipped << slug + ": " + problem;
+    }
+    return result;
+}
+
+void requestCancel(bool cancel) { cancelled = cancel; }
 
 Result installRepository(const Paths &paths, const QString &url) {
     Result result;
@@ -302,6 +388,9 @@ QJsonArray community(QString &error, const QString &catalog) {
     request.setTransferTimeout(30000);
     QNetworkReply *reply = network.get(request);
     QEventLoop loop;
+    QTimer watch;
+    QObject::connect(&watch, &QTimer::timeout, reply, [reply] { if (cancelled) reply->abort(); });
+    watch.start(150);
     QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
     loop.exec();
     reply->deleteLater();

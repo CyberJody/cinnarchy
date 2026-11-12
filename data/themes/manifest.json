@@ -53,7 +53,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "5772229dc149b12fd713df0fe5ce7898061aa6b947ef724f870dfaee7ce6bf68"
+    "palette_sha256": "5772229dc149b12fd713df0fe5ce7898061aa6b947ef724f870dfaee7ce6bf68",
+    "icon_theme": "Yaru-purple"
   },
   {
     "slug": "catppuccin-latte",
@@ -109,7 +110,8 @@
       "mode": "light",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained.css"
     },
-    "palette_sha256": "fa94a7bd6eff82faaaa2394491afefac44bddb96c4959ae4489c191195b7eb99"
+    "palette_sha256": "fa94a7bd6eff82faaaa2394491afefac44bddb96c4959ae4489c191195b7eb99",
+    "icon_theme": "Yaru-blue"
   },
   {
     "slug": "ethereal",
@@ -165,7 +167,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "7c669c30e96ffcad695572d712e0204635e468feed826d1a4570b28570c32c36"
+    "palette_sha256": "7c669c30e96ffcad695572d712e0204635e468feed826d1a4570b28570c32c36",
+    "icon_theme": "Yaru-blue"
   },
   {
     "slug": "everforest",
@@ -221,7 +224,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "b0df47f46aa2ea0f5df84a1082406fca2639fea2cc5025313e1669b09234b6f3"
+    "palette_sha256": "b0df47f46aa2ea0f5df84a1082406fca2639fea2cc5025313e1669b09234b6f3",
+    "icon_theme": "Yaru-sage"
   },
   {
     "slug": "flexoki-light",
@@ -277,7 +281,8 @@
       "mode": "light",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained.css"
     },
-    "palette_sha256": "631db02f5adda957922551f151c7f34fe4cc2f334fb68a819097852fcbc6c2df"
+    "palette_sha256": "631db02f5adda957922551f151c7f34fe4cc2f334fb68a819097852fcbc6c2df",
+    "icon_theme": "Yaru-blue"
   },
   {
     "slug": "gruvbox",
@@ -333,7 +338,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "87854e766d25753f6909f4ada0b25f3a37f95f857d44b76bbd332c426fb8e5e3"
+    "palette_sha256": "87854e766d25753f6909f4ada0b25f3a37f95f857d44b76bbd332c426fb8e5e3",
+    "icon_theme": "Yaru-olive"
   },
   {
     "slug": "hackerman",
@@ -390,7 +396,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "dd0aaac19cd05822cd0e556b81e0dd945691e68f5be21a203e74efd6b80bd58b"
+    "palette_sha256": "dd0aaac19cd05822cd0e556b81e0dd945691e68f5be21a203e74efd6b80bd58b",
+    "icon_theme": "Yaru-blue"
   },
   {
     "slug": "jade-horse",
@@ -446,7 +453,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "4d029dc74acd4cfaa922566110c9f901900238c53ff29b73c1a8ec71d6dd16f5"
+    "palette_sha256": "4d029dc74acd4cfaa922566110c9f901900238c53ff29b73c1a8ec71d6dd16f5",
+    "icon_theme": "Yaru-sage"
   },
   {
     "slug": "kanagawa",
@@ -502,7 +510,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "fc6974fc943592109ae7ed6e82fd1f3ab96d8d066d00e76b871c511b8168b198"
+    "palette_sha256": "fc6974fc943592109ae7ed6e82fd1f3ab96d8d066d00e76b871c511b8168b198",
+    "icon_theme": "Yaru-blue"
   },
   {
     "slug": "last-horizon",
@@ -560,7 +569,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "b54615b9db104112acc105b57ff432bf9f1f408d2206a09d97fd7bbe1ecc8420"
+    "palette_sha256": "b54615b9db104112acc105b57ff432bf9f1f408d2206a09d97fd7bbe1ecc8420",
+    "icon_theme": "Yaru-purple"
   },
   {
     "slug": "lumon",
@@ -618,7 +628,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "1231e68007c4fcd461ad27db3462d874ea0b23cc1acf0165920d8c9adc5c40d8"
+    "palette_sha256": "1231e68007c4fcd461ad27db3462d874ea0b23cc1acf0165920d8c9adc5c40d8",
+    "icon_theme": "Yaru-blue"
   },
   {
     "slug": "lupine",
@@ -674,7 +685,8 @@
       "mode": "light",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained.css"
     },
-    "palette_sha256": "d5405ac8f0eaebbc76ce6f1aaafdb7b21909ee0b7cf4df1ebd5851367e2ebed0"
+    "palette_sha256": "d5405ac8f0eaebbc76ce6f1aaafdb7b21909ee0b7cf4df1ebd5851367e2ebed0",
+    "icon_theme": "Yaru-purple"
   },
   {
     "slug": "matte-black",
@@ -730,7 +742,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "f6a98c1db21e2eb2e3e2f37b3863419eed75e0ab468ba0687e35fe97d4e19f32"
+    "palette_sha256": "f6a98c1db21e2eb2e3e2f37b3863419eed75e0ab468ba0687e35fe97d4e19f32",
+    "icon_theme": "Yaru-red"
   },
   {
     "slug": "miasma",
@@ -786,7 +799,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "b5ac1bfc8d31125ba94602eae5eeba408b23428e03b02e4dc56db2fceabb3e14"
+    "palette_sha256": "b5ac1bfc8d31125ba94602eae5eeba408b23428e03b02e4dc56db2fceabb3e14",
+    "icon_theme": "Yaru-wartybrown"
   },
   {
     "slug": "nord",
@@ -842,7 +856,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "89765538b31d33580479e778953b7fe34386257e2a4f9d9d0bed74f95a0be32e"
+    "palette_sha256": "89765538b31d33580479e778953b7fe34386257e2a4f9d9d0bed74f95a0be32e",
+    "icon_theme": "Yaru-blue"
   },
   {
     "slug": "retro-82",
@@ -898,7 +913,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "8b8e7f0872ca7f70470dbc5b80d0008b527a877ad6997d8a758fed5b49c9a89d"
+    "palette_sha256": "8b8e7f0872ca7f70470dbc5b80d0008b527a877ad6997d8a758fed5b49c9a89d",
+    "icon_theme": "Yaru-wartybrown"
   },
   {
     "slug": "ristretto",
@@ -954,7 +970,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "72e53ae2f4714ee0811a78e165e41c04f59b48e8815fe8107999db2999f15f66"
+    "palette_sha256": "72e53ae2f4714ee0811a78e165e41c04f59b48e8815fe8107999db2999f15f66",
+    "icon_theme": "Yaru-yellow"
   },
   {
     "slug": "rose-pine",
@@ -1010,7 +1027,8 @@
       "mode": "light",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained.css"
     },
-    "palette_sha256": "b24f31d02261b9562e135277afcbca9216f9991bcf4f2085b330ce1b8296f611"
+    "palette_sha256": "b24f31d02261b9562e135277afcbca9216f9991bcf4f2085b330ce1b8296f611",
+    "icon_theme": "Yaru-blue"
   },
   {
     "slug": "solitude",
@@ -1068,7 +1086,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "a8426a095f21fdd873a73a2e719b90153a68ce31c049a3cb06777576123d9b15"
+    "palette_sha256": "a8426a095f21fdd873a73a2e719b90153a68ce31c049a3cb06777576123d9b15",
+    "icon_theme": "Yaru-sage-dark"
   },
   {
     "slug": "starship",
@@ -1180,7 +1199,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "b7b002300ca2b9f4730a32aef0f13a385b56eb411fc0fe1e8c2b6343878a4b7c"
+    "palette_sha256": "b7b002300ca2b9f4730a32aef0f13a385b56eb411fc0fe1e8c2b6343878a4b7c",
+    "icon_theme": "Yaru-magenta"
   },
   {
     "slug": "vantablack",
@@ -1236,7 +1256,8 @@
       "mode": "dark",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css"
     },
-    "palette_sha256": "1a9b9a58b4cc7f1b079667f375f630f3fe217cb2806d0164fa47b8072ac914dd"
+    "palette_sha256": "1a9b9a58b4cc7f1b079667f375f630f3fe217cb2806d0164fa47b8072ac914dd",
+    "icon_theme": "Yaru-gray"
   },
   {
     "slug": "white",
@@ -1290,6 +1311,7 @@
       "mode": "light",
       "gtk_resource": "resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained.css"
     },
-    "palette_sha256": "9990e5fd959c420a4a721c5b3f19fdd511531f23d650af2ba9940678f041513a"
+    "palette_sha256": "9990e5fd959c420a4a721c5b3f19fdd511531f23d650af2ba9940678f041513a",
+    "icon_theme": "Yaru-grey"
   }
 ]

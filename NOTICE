@@ -10,8 +10,8 @@ version 2 or later. Palette colors and additional styling were substituted on
 2026-11-10.
 Source: https://github.com/linuxmint/cinnamon/tree/master/data/theme
 
-The bundled palette data (data/themes/*/palette.json and manifest.json) is
-copied from Omarchy 4.5.0, copyright David Heinemeier Hansson and contributors,
+The bundled palette data and icon theme names (data/themes/*/palette.json and
+manifest.json) are copied from Omarchy 4.5.0, copyright David Heinemeier Hansson and contributors,
 under the MIT license. Its permission notice is reproduced in OMARCHY-LICENSE.
 src/generator.cpp ports Omarchy's palette fallback rules and alacritty.toml
 reader (bin/omarchy-theme-color, bin/omarchy-theme-colors-from-alacritty)

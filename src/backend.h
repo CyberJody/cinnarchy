@@ -22,6 +22,7 @@ struct PickerPaths {
     bool wallpaperRuntime=true;
     QString userThemeRoot; // where fetched Omarchy themes go; empty: last stock root
     QString communityCatalog=ThemeFetch::communityCatalog;
+    QString officialRepo=ThemeFetch::officialRepo;
     static PickerPaths defaults();
     ThemeFetch::Paths fetchPaths() const;
 };
@@ -52,6 +53,8 @@ class Backend : public QObject {
     Q_PROPERTY(bool hasAnimations READ hasAnimations NOTIFY stateChanged)
     Q_PROPERTY(bool fetching READ fetching NOTIFY fetchChanged)
     Q_PROPERTY(QVariantList communityThemes READ communityThemes NOTIFY fetchChanged)
+    Q_PROPERTY(int themesWithoutBackgrounds READ themesWithoutBackgrounds NOTIFY catalogChanged)
+    Q_PROPERTY(QString version READ version CONSTANT)
 public:
     explicit Backend(QObject *parent=nullptr, PickerPaths paths=PickerPaths::defaults(), SettingsStore *store=nullptr,FilePicker *picker=nullptr);
     ~Backend() override;
@@ -62,6 +65,10 @@ public:
     Q_INVOKABLE void fetchOfficial();
     Q_INVOKABLE void installTheme(const QString &url);
     Q_INVOKABLE void loadCommunity();
+    // Omarchy's own backgrounds for the selected built-in theme, or for every one lacking them.
+    Q_INVOKABLE void downloadBackgrounds(bool everyTheme);
+    int themesWithoutBackgrounds() const;
+    QString version() const;
     // A new GitHub issue with version and system details filled in; nothing personal.
     Q_INVOKABLE QString reportUrl() const;
     void finishFetch(const ThemeFetch::Result &result);
@@ -122,7 +129,7 @@ private:
     QThread *m_worker=nullptr;
     QJsonArray m_community;
     QVariantList wallpapers(const QString &slug) const;
-    QString iconFor(const QString &slug, const QString &mode, QString &note) const;
+    QString iconFor(const QString &slug, const QString &mode, const QString &bundledChoice, QString &note) const;
     bool ensureInstalled(const QVariantMap &theme);
     QJsonArray desiredSettings();
     bool commit(const QJsonArray &changes);

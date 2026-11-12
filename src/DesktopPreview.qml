@@ -30,7 +30,7 @@ Rectangle {
     Rectangle {
         width: Math.min(390, parent.width * 0.63); height: Math.min(222, parent.height * 0.72)
         anchors.centerIn: parent; anchors.verticalCenterOffset: 11
-        color: root.colors.bg; radius: 10; border.color: root.colors.border
+        color: root.colors.bg; radius: 10; border.color: root.colors.border; clip: true
         Rectangle {
             x: 1; y: 1; width: parent.width - 2; height: 35; radius: 9; color: root.colors.panel
             Rectangle { anchors.bottom: parent.bottom; height: 10; width: parent.width; color: parent.color }

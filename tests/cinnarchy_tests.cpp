@@ -181,6 +181,64 @@ private slots:
         b.installTheme(QUrl::fromLocalFile(repo).toString());QVERIFY(finished.wait(30000));QVERIFY(b.message().contains("Updated"));
         b.installTheme("ext::sh -c id");QVERIFY(finished.wait(30000));QVERIFY(b.error());
     }
+    void themeWithoutBackgroundsKeepsTheCurrentOne() {
+        Fixture f;QDir(f.paths.stockRoots[0]+"/nord/backgrounds").removeRecursively();
+        Backend b(nullptr,f.paths,&f.settings);QCOMPARE(b.themesWithoutBackgrounds(),1);
+        b.selectTheme("catppuccin");const auto kept=b.wallpaperUrl();QVERIFY(kept.contains("catppuccin"));
+        b.selectTheme("nord");QVERIFY(b.selected().value("wallpapers").toList().isEmpty());QCOMPARE(b.wallpaperUrl(),kept);
+        QVERIFY2(b.applyNow(),qPrintable(b.message()));
+        QCOMPARE(unquote(f.settings.read("org.cinnamon.theme","name")),QString("Omarchy-nord"));
+        QCOMPARE(unquote(f.settings.read("org.cinnamon.desktop.background","picture-uri")),kept);
+    }
+    void firstRunWithoutAnyBackgroundsExplainsItself() {
+        Fixture f;for(const auto &name:QDir(f.paths.stockRoots[0]).entryList(QDir::Dirs|QDir::NoDotAndDotDot))QDir(f.paths.stockRoots[0]+"/"+name+"/backgrounds").removeRecursively();
+        const auto original=f.settings.values;Backend b(nullptr,f.paths,&f.settings);QCOMPARE(b.themesWithoutBackgrounds(),23);
+        QVERIFY(!b.applyNow());QVERIFY(b.message().contains("No background is chosen"));QCOMPARE(f.settings.values,original);
+        b.setUseWallpaper(false);QVERIFY2(b.applyNow(),qPrintable(b.message()));
+    }
+    void officialBackgroundsDownloadForBuiltInThemes() {
+        Fixture f;QTemporaryDir remote;const auto repo=remote.filePath("omarchy");const auto root=f.paths.stockRoots[0];
+        for(const auto &slug:{"nord","white"}){QDir(root+"/"+slug).removeRecursively();addTheme(repo+"/themes/"+slug,colors("#111111"));}
+        QDir(root+"/gruvbox/backgrounds").removeRecursively();addTheme(repo+"/themes/gruvbox",colors("#222222"));
+        QDir(root+"/lumon").removeRecursively();
+        QVERIFY(run(repo,{"init","-q"}));QVERIFY(run(repo,{"add","-A"}));QVERIFY(run(repo,{"commit","-qm","themes"}));
+        const auto url=QUrl::fromLocalFile(repo).toString();const auto paths=f.paths.fetchPaths();
+        QCOMPARE(ThemeFetch::missingBackgrounds(paths),(QStringList{"gruvbox","lumon","nord","white"}));
+        auto result=ThemeFetch::downloadBackgrounds(paths,{"nord"},url);QVERIFY2(result.ok,qPrintable(result.error));
+        QCOMPARE(result.backgrounds,QStringList{"nord"});QVERIFY(QFileInfo::exists(root+"/nord/backgrounds/1-one.png"));
+        QVERIFY(QFileInfo::exists(root+"/nord/icons.theme"));QVERIFY(!QFileInfo::exists(f.paths.themeRoot+"/Omarchy-nord"));
+        // Every remaining theme: a folder the user made is left alone, and one Omarchy lacks is reported.
+        result=ThemeFetch::downloadBackgrounds(paths,{},url);QVERIFY(result.ok);QCOMPARE(result.backgrounds,QStringList{"white"});
+        QCOMPARE(result.skipped,(QStringList{"gruvbox","lumon"}));QVERIFY(!QFileInfo::exists(root+"/gruvbox/backgrounds"));
+        QVERIFY(ThemeFetch::downloadBackgrounds(paths,{},url).backgrounds.isEmpty());
+    }
+    void cancelledDownloadsStopInsteadOfFinishing() {
+        Fixture f;QTemporaryDir remote;const auto repo=remote.filePath("omarchy");addTheme(repo+"/themes/new-dawn",colors("#ff8800"));
+        QVERIFY(run(repo,{"init","-q"}));QVERIFY(run(repo,{"add","-A"}));QVERIFY(run(repo,{"commit","-qm","themes"}));
+        ThemeFetch::requestCancel(true);auto result=ThemeFetch::syncOfficial(f.paths.fetchPaths(),QUrl::fromLocalFile(repo).toString());ThemeFetch::requestCancel(false);
+        QVERIFY(!result.ok);QVERIFY(result.error.contains("cancelled"));QVERIFY(!QFileInfo::exists(f.paths.stockRoots[0]+"/new-dawn"));
+        QVERIFY(QDir(f.paths.stockRoots[0]).entryList({".cinnarchy-*"},QDir::Dirs|QDir::Hidden).isEmpty());
+        result=ThemeFetch::syncOfficial(f.paths.fetchPaths(),QUrl::fromLocalFile(repo).toString());QCOMPARE(result.added,QStringList{"new-dawn"});
+    }
+    void missingBackgroundsAreOfferedAndDownloadedInThePicker() {
+        Fixture f;QTemporaryDir remote;const auto repo=remote.filePath("omarchy");QDir(f.paths.stockRoots[0]+"/nord").removeRecursively();
+        addTheme(repo+"/themes/nord",colors("#111111"));QVERIFY(run(repo,{"init","-q"}));QVERIFY(run(repo,{"add","-A"}));QVERIFY(run(repo,{"commit","-qm","themes"}));
+        f.paths.officialRepo=QUrl::fromLocalFile(repo).toString();
+        Backend b(nullptr,f.paths,&f.settings);Theme theme(f.dir.filePath("current"));Translator translator(f.dir.filePath("language"));
+        QQmlApplicationEngine engine;QStringList warnings;connect(&engine,&QQmlEngine::warnings,this,[&](const QList<QQmlError>& errors){for(const auto&e:errors)warnings<<e.toString();});
+        engine.rootContext()->setContextProperty("backend",&b);engine.rootContext()->setContextProperty("theme",&theme);engine.rootContext()->setContextProperty("translator",&translator);
+        engine.load(QUrl("qrc:/Main.qml"));QVERIFY(!engine.rootObjects().isEmpty());
+        auto *window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());QVERIFY(window);
+        auto item=[&](const char*name){return window->findChild<QQuickItem*>(name);};
+        b.selectTheme("catppuccin");QTRY_VERIFY(item("wallpaperList")->isVisible());QVERIFY(!item("backgroundsMissing")->isVisible());
+        b.selectTheme("nord");QTRY_VERIFY(item("backgroundsMissing")->isVisible());QVERIFY(!item("wallpaperList")->isVisible());
+        QVERIFY(!item("downloadAllBackgroundsButton")->isVisible());
+        QSignalSpy finished(&b,&Backend::fetchFinished);auto *button=item("downloadBackgroundsButton");QVERIFY(button->isVisible());
+        QTest::mouseClick(window,Qt::LeftButton,Qt::NoModifier,button->mapToScene(QPointF(button->width()/2,button->height()/2)).toPoint());
+        QVERIFY(finished.wait(30000));QVERIFY2(!b.error(),qPrintable(b.message()));QVERIFY(b.message().contains("Nord"));
+        QTRY_VERIFY(item("wallpaperList")->isVisible());QVERIFY(b.wallpaperUrl().contains("/nord/backgrounds/"));QCOMPARE(b.themesWithoutBackgrounds(),0);
+        QVERIFY2(warnings.isEmpty(),qPrintable(warnings.join('\n')));window->close();
+    }
     void installedOmarchyThemeGetsACinnamonTheme() {
         Fixture f;addTheme(f.paths.stockRoots[0]+"/hand-made",colors("#abcdef"));
         const auto result=ThemeFetch::generateMissing(f.paths.fetchPaths());QCOMPARE(result.generated,QStringList{"hand-made"});
@@ -315,6 +373,12 @@ private slots:
         QCOMPARE(b.selected().value("wallpapers").toList().size(),3);
         QCOMPARE(b.selected().value("icons").toString(),QString("Papirus-Dark"));QVERIFY(!b.selected().value("iconNote").toString().isEmpty());
     }
+    void builtInThemesKnowTheirIconsWithoutOmarchyFiles() {
+        Fixture f;QFile::remove(f.paths.stockRoots[0]+"/tokyo-night/icons.theme");
+        QDir().mkpath(f.paths.iconRoots[0]+"/Yaru-magenta");writeFile(f.paths.iconRoots[0]+"/Yaru-magenta/index.theme","[Icon Theme]\nName=Example\n");
+        Backend b(nullptr,f.paths,&f.settings);b.selectTheme("tokyo-night");QCOMPARE(b.selected().value("icons").toString(),QString("Yaru-magenta"));
+        b.selectTheme("nord");QCOMPARE(b.selected().value("icons").toString(),QString("Yaru-blue"));
+    }
     void unrelatedThemeFolderIsNotReplaced() {
         Fixture f;Backend b(nullptr,f.paths,&f.settings);const auto path=f.paths.themeRoot+"/Omarchy-catppuccin";QDir().mkpath(path);
         QFile file(path+"/personal.txt");file.open(QIODevice::WriteOnly);file.write("keep me");file.close();
@@ -378,11 +442,25 @@ private slots:
         click(item("undoButton"));QTRY_VERIFY(!b.busy());QCOMPARE(f.settings.values,original);
         QTest::keyClick(window,Qt::Key_Z,Qt::ControlModifier|Qt::ShiftModifier);QTRY_VERIFY(!b.canRedo());
         QCOMPARE(unquote(f.settings.read("org.cinnamon.theme","name")),QString("Omarchy-nord"));
+        // Space presses a control that has keyboard focus; after picking a card with the mouse it applies.
+        const auto applied=f.settings.values;item("wallpaperCheck")->forceActiveFocus(Qt::TabFocusReason);
+        QTest::keyClick(window,Qt::Key_Space);QTRY_VERIFY(!b.useWallpaper());QTest::qWait(150);QCOMPARE(f.settings.values,applied);
+        QTest::keyClick(window,Qt::Key_Space);QTRY_VERIFY(b.useWallpaper());
+        QMetaObject::invokeMethod(item("themeList"),"positionViewAtIndex",Q_ARG(int,0),Q_ARG(int,0));QTest::qWait(100);
+        click(item("themeList"),QPointF(80,36));QCOMPARE(b.selectedSlug(),QString("catppuccin"));
+        QTest::keyClick(window,Qt::Key_Space);QTRY_COMPARE(unquote(f.settings.read("org.cinnamon.theme","name")),QString("Omarchy-catppuccin"));QTRY_VERIFY(!b.busy());
+        // A short window scrolls its options and keeps the action row inside.
+        QVERIFY(!item("optionsScroller")->property("scrolls").toBool());
+        window->resize(1000,window->minimumHeight());QTRY_VERIFY(item("optionsScroller")->property("scrolls").toBool());
+        for(const auto *name:{"applyButton","undoButton","statusMessage","reportButton","getThemesButton"}){auto *control=item(name);QVERIFY2(control,name);
+            QVERIFY2(control->mapToScene(QPointF(0,control->height())).y()<=window->height(),name);}
+        QCOMPARE(item("versionLabel")->isVisible(),!QCoreApplication::applicationVersion().isEmpty());
+        window->resize(1180,960);QTRY_VERIFY(!item("optionsScroller")->property("scrolls").toBool());
         // Typing in the Get more themes dialog must not reach the desktop shortcuts.
         QVERIFY(QMetaObject::invokeMethod(window->findChild<QObject*>("getThemesDialog"),"open"));QTRY_VERIFY(!window->property("shortcutsActive").toBool());
         QTRY_COMPARE(item("communityGrid")->property("count").toInt(),1);QTRY_VERIFY(!b.fetching());
         QTest::keyClick(window,Qt::Key_Q);QTest::keyClick(window,Qt::Key_Space);QTest::qWait(100);
-        QVERIFY(window->isVisible());QVERIFY(!b.busy());QCOMPARE(unquote(f.settings.read("org.cinnamon.theme","name")),QString("Omarchy-nord"));
+        QVERIFY(window->isVisible());QVERIFY(!b.busy());QCOMPARE(unquote(f.settings.read("org.cinnamon.theme","name")),QString("Omarchy-catppuccin"));
         QVERIFY2(warnings.isEmpty(),qPrintable(warnings.join('\n')));
         window->close();
     }

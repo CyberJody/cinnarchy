@@ -6,9 +6,10 @@ Bring [Omarchy](https://omarchy.org)'s themes to the Cinnamon desktop.
 Select a complete Omarchy look, choose its wallpaper, and click **Apply full
 theme**. The picker switches Cinnamon desktop styling, GTK applications,
 window borders, matching icons, background and the dark/light preference
-together. It includes all 23 palettes from Omarchy 4.5.0 and finds their images
-and animated backgrounds in the installed Omarchy themes. **Get more themes…**
-downloads new official themes and hundreds of community themes.
+together. It includes all 23 palettes from Omarchy 4.5.0. You don't need
+Omarchy installed: the picker downloads Omarchy's own backgrounds on request,
+and **Get more themes…** adds new official themes and hundreds of community
+themes.
 
 Cinnarchy is an independent project, not affiliated with or endorsed by
 Omarchy, Basecamp or Linux Mint.
@@ -64,8 +65,13 @@ The desktop preview illustrates the selected Cinnamon/GTK colors over the
 actual wallpaper. Available source icon packs are shown below the preview.
 When a requested pack is unavailable, an installed Papirus or Adwaita fallback
 is named explicitly. Background images stay in their existing folders.
-A theme without an available background reports the missing file before
-applying; wallpaper switching can be disabled for it.
+A background file that has gone missing is reported before anything changes.
+
+A theme with no backgrounds installed keeps the background you already have.
+For a built-in theme the picker offers **Download backgrounds** in place of the
+thumbnails: it fetches that theme's official backgrounds from Omarchy's
+repository (1–25 MB), and **Download for all themes** fetches every one
+(about 170 MB). They are saved under `~/.config/omarchy/themes/`.
 
 User backgrounds in `~/.config/omarchy/backgrounds/<slug>/` and user theme
 backgrounds in `~/.config/omarchy/themes/<slug>/backgrounds/` are discovered
@@ -105,9 +111,13 @@ settings have no per-palette values and are preserved.
 
 Requirements: Qt 6 base, declarative/Quick Controls, SVG and Multimedia;
 GLib/GIO; X11, XRandR and Xext; Cinnamon; mpv, ffmpeg, git and XDG desktop portal;
-a C++17 compiler, qmake6 and make. Installed Omarchy supplies the wallpapers
-and source icon choices. Cinnamon/GTK theme assets are embedded in the binary
-and installed into `~/.themes` on demand.
+a C++17 compiler, qmake6 and make. Cinnamon/GTK theme assets and each built-in
+theme's icon choice are embedded in the binary; themes are installed into
+`~/.themes` on demand. Wallpapers come from an installed Omarchy, from the
+`omarchy-theme-backgrounds` package below, or from **Download backgrounds** in
+the picker (`cinnarchy fetch --backgrounds` on the command line).
+
+Developed and tested on Debian 13 / LMDE 7 with Cinnamon 6.6 and Qt 6.8.
 
 ```sh
 git clone https://github.com/CyberJody/cinnarchy.git
@@ -121,7 +131,7 @@ python3 tests/gtk_desktop_regression.py
 The user installer places the binary in `~/.local/bin/cinnarchy`, with a
 Cinnamon menu entry and icon under your user data directory. It does not
 require administrator access. For an Arch package, `./bin/package` creates
-`pkgbuild/cinnarchy-1.2.0-1-x86_64.pkg.tar.zst`; `./bin/install` builds and
+`pkgbuild/cinnarchy-1.2.1-1-x86_64.pkg.tar.zst`; `./bin/install` builds and
 installs it through makepkg/pacman.
 
 ### Debian 13 (trixie)
@@ -139,7 +149,7 @@ sudo apt install qmake6 qt6-base-dev qt6-declarative-dev qt6-multimedia-dev \
 sudo apt install ./pkgdeb/*.deb
 ```
 
-Debian has no Omarchy, so `bin/package-deb` also builds
+Debian has no Omarchy, so `bin/package-deb` also builds the optional
 `omarchy-theme-backgrounds`. It has the `backgrounds/` and `icons.theme` files
 from Omarchy v4.5.0 (git tag) and the checksum-verified
 `omarchy-themes-intros` videos, installed in Omarchy's own layout under
@@ -157,7 +167,8 @@ repair; unrelated folders and symbolic links are not replaced.
 
 | Shortcut | Action |
 | --- | --- |
-| Ctrl+Enter or Space | Apply the full theme |
+| Ctrl+Enter | Apply the full theme |
+| Space | Apply the full theme, or press the button or checkbox that has keyboard focus |
 | Ctrl+Z | Undo |
 | Ctrl+Shift+Z | Redo |
 | Ctrl+R | Refresh themes and backgrounds |
@@ -179,6 +190,7 @@ cinnarchy apply ethereal --file /path/to/animated.webp --json
 cinnarchy fetch --json              # new official themes from GitHub
 cinnarchy fetch --url https://github.com/user/omarchy-name-theme --json
 cinnarchy fetch --community --json  # community themes listed on omarchy.org
+cinnarchy fetch --backgrounds --json  # Omarchy's backgrounds for built-in themes lacking them
 cinnarchy apply ethereal --screen-background DP-1=/path/to/photo.jpg \
   --screen-background HDMI-1=/path/to/video.mp4 --json
 cinnarchy pause --json              # toggle playback

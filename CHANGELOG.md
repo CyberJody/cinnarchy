@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.1 — 2026-11-12
+
+- Works without Omarchy installed: **Download backgrounds** fetches a built-in
+  theme's official backgrounds (or every theme's) from Omarchy's repository;
+  `cinnarchy fetch --backgrounds` does the same. Until then a theme keeps your
+  current background instead of failing to apply.
+- Built-in themes carry their Omarchy 4.5.0 icon choice, so they no longer
+  need an installed `icons.theme`.
+- Fits small screens: the window opens inside the available screen, its options
+  scroll when short, and the Apply/Undo row always stays visible.
+- Space now presses the button or checkbox that has keyboard focus; it still
+  applies the theme otherwise. Cards show a focus outline for keyboard use.
+- One consistent button style; the sidebar shows the version next to
+  **Report a problem**.
+- Closing the picker stops a download in progress instead of waiting for it.
+
 ## 1.2.0 — 2026-11-12
 
 - **Get more themes…** downloads official themes added to

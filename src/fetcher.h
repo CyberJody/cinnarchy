@@ -19,6 +19,7 @@ struct Result {
     bool ok = true;
     QString error;
     QStringList added, updated, generated, skipped;
+    QStringList backgrounds; // bundled themes whose official backgrounds were downloaded
     QJsonObject toJson() const;
 };
 
@@ -29,6 +30,12 @@ Result syncOfficial(const Paths &paths, const QString &repo = officialRepo);
 Result installRepository(const Paths &paths, const QString &url);
 // Cinnamon themes for installed Omarchy themes that have none.
 Result generateMissing(const Paths &paths);
+// Bundled themes with no backgrounds installed anywhere (no Omarchy on this system).
+QStringList missingBackgrounds(const Paths &paths);
+// Official backgrounds and icon choices for those themes; every one when slugs is empty.
+Result downloadBackgrounds(const Paths &paths, const QStringList &slugs = {}, const QString &repo = officialRepo);
+// Makes running downloads stop promptly, e.g. when the picker closes.
+void requestCancel(bool cancel);
 
 // Theme name Omarchy derives from a repository URL ("" when unusable).
 QString nameFromUrl(const QString &url);

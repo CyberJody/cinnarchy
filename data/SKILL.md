@@ -28,6 +28,8 @@ official themes added to github.com/omacom/omarchy and reports `added`, `updated
 `generated` and `skipped` slugs. Install a community theme with
 `cinnarchy fetch --url GIT_URL --json`; `cinnarchy fetch --community --json` lists
 the community themes on omarchy.org with their repository URLs. Fetched themes
-then appear in `list` and can be applied like the others.
+then appear in `list` and can be applied like the others. When `check` reports
+`missingBackgrounds` (no Omarchy installed), `cinnarchy fetch --backgrounds --json`
+downloads Omarchy's official backgrounds for those built-in themes.
 
 To open the picker for the user, run `cinnarchy open`.

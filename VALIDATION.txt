@@ -74,3 +74,16 @@ Cinnarchy 1.2.0 additions — validated 2026-11-12 on Debian 13, Qt 6.8.2
   Clones refuse git option and transport-helper URLs, never prompt, and copy
     no symbolic links or .git metadata.
   Desktop shortcuts stay inactive while the Get more themes dialog is open.
+
+Cinnarchy 1.2.1 additions — validated 2026-11-12 on Debian 13, Qt 6.8.2
+  QtTest: 33 passed, 0 failed.
+  First run without any Omarchy files: the picker offers Download backgrounds;
+    a live download of Catppuccin's backgrounds from github.com/omacom/omarchy
+    took under two seconds, listed 4 images and 3 videos, and Apply succeeded.
+  A theme without backgrounds keeps the current one and still applies.
+  At 1000x560 the options scroll and the Apply/Undo row, Get more themes and
+    Report a problem remain inside the window.
+  Space toggles a focused checkbox without applying; after a mouse click on a
+    theme card it applies.
+  A cancelled download leaves no partial theme or staging folder.
+  Not yet verified on Qt 6.4 (Ubuntu 24.04 / Linux Mint 22).
