@@ -40,7 +40,8 @@ jobs:
             qml6-module-qtquick-templates qml6-module-qtquick-window \
             qml6-module-qtqml-workerscript qml6-module-qtmultimedia \
             libglib2.0-dev libx11-dev libxrandr-dev libxext-dev \
-            ffmpeg mpv python3 python3-gi gir1.2-gtk-3.0 xvfb xauth
+            ffmpeg mpv gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            gstreamer1.0-libav python3 python3-gi gir1.2-gtk-3.0 xvfb xauth
           # Packages that exist under different names, or not at all, depending
           # on the release. bin/package-deb fails if a file it needs is absent.
           for package in qt6-svg-dev libqt6svg6-dev qt6-qpa-plugins qt6-svg-plugins \

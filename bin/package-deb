@@ -98,7 +98,8 @@ def qt_runtime_depends():
     """Packages that own the QML modules and plugins the picker loads."""
     def query(name):
         return Path(run('qmake6', '-query', name, capture_output=True, text=True).stdout.strip())
-    wanted = [(query('QT_INSTALL_QML'), RUNTIME_QML), (query('QT_INSTALL_PLUGINS'), RUNTIME_PLUGINS)]
+    plugin_root = query('QT_INSTALL_PLUGINS')
+    wanted = [(query('QT_INSTALL_QML'), RUNTIME_QML), (plugin_root, RUNTIME_PLUGINS)]
     packages, missing = set(), []
     for base, patterns in wanted:
         for pattern in patterns:
@@ -113,6 +114,10 @@ def qt_runtime_depends():
                     packages.add(owner.stdout.split(':')[0].strip())
     if missing:
         sys.exit('Qt files the picker needs are not installed from packages:\n  ' + '\n  '.join(missing))
+    # Ubuntu 24.04's Qt uses GStreamer. Its backend library does not depend on
+    # the dynamically loaded elements needed for volume, MP4 demuxing and codecs.
+    if (plugin_root / 'multimedia/libgstreamermediaplugin.so').is_file():
+        packages.update({'gstreamer1.0-plugins-base', 'gstreamer1.0-plugins-good', 'gstreamer1.0-libav'})
     return packages
 
 
