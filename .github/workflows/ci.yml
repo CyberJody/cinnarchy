@@ -48,7 +48,7 @@ jobs:
               qt6-image-formats-plugins qml6-module-qtqml qml6-module-qtqml-models; do
             apt-get install -y --no-install-recommends "$package" || echo "::notice::$package is not packaged here"
           done
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build
         run: ./bin/build
       - name: Tests
@@ -62,7 +62,7 @@ jobs:
           # reach the newest release.
           mv pkgdeb/cinnarchy_*_amd64.deb "pkgdeb/${{ matrix.asset }}"
           dpkg-deb --info "pkgdeb/${{ matrix.asset }}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: deb-${{ matrix.target }}
           path: pkgdeb/${{ matrix.asset }}
@@ -89,7 +89,7 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
       GSETTINGS_BACKEND: memory
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: deb-${{ matrix.target }}
       - name: Install the package on a system with nothing else
@@ -103,7 +103,7 @@ jobs:
           cinnarchy status --json
           cinnarchy screenshot --select tokyo-night --output picker.png
           test -s picker.png
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: picker-${{ matrix.target }}
           path: picker.png
@@ -116,8 +116,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: deb-*
           path: dist
