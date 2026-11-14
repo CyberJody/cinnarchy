@@ -103,6 +103,11 @@ jobs:
           cinnarchy status --json
           cinnarchy screenshot --select tokyo-night --output picker.png
           test -s picker.png
+          cinnarchy reset --json
+      - name: Remove the package
+        run: |
+          apt-get remove -y cinnarchy
+          test ! -e /usr/bin/cinnarchy
       - uses: actions/upload-artifact@v7
         with:
           name: picker-${{ matrix.target }}

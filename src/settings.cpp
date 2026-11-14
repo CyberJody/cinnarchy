@@ -36,6 +36,15 @@ public:
         g_free(printed); g_variant_unref(value);
         return result;
     }
+    QString defaultValue(const QString &s, const QString &k) const override {
+        if (!has(s,k)) return {};
+        auto *value = g_settings_get_default_value(object(s), k.toUtf8().constData());
+        if (!value) return {};
+        char *printed = g_variant_print(value, TRUE);
+        const QString result = QString::fromUtf8(printed);
+        g_free(printed); g_variant_unref(value);
+        return result;
+    }
     bool write(const QString &s, const QString &k, const QString &text, QString &error) override {
         if (!writable(s,k)) { error = QString("Setting is unavailable or locked: %1 / %2").arg(s,k); return false; }
         GError *parseError = nullptr;

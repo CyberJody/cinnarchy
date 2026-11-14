@@ -56,6 +56,30 @@ RECOMMENDS = ['yaru-theme-icon', 'papirus-icon-theme', 'xdg-desktop-portal-xapp'
 SUGGESTS = [ASSETS_NAME]  # built locally; the picker can download backgrounds itself
 
 
+# Removing the package would otherwise leave the desktop on an Omarchy look
+# that nothing can change back, a player still running and a login entry for
+# a program that is gone. Everyone logged in gets their earlier setup back.
+# An upgrade runs this script with "upgrade" and changes nothing.
+PRERM = r"""#!/bin/sh
+set -e
+if [ "$1" = remove ]; then
+    for bus in /run/user/*/bus; do
+        [ -S "$bus" ] || continue
+        uid=${bus#/run/user/}
+        uid=${uid%/bus}
+        [ "$uid" -ge 1000 ] 2>/dev/null || continue
+        entry=$(getent passwd "$uid") || continue
+        user=${entry%%:*}
+        home=$(printf '%s\n' "$entry" | cut -d: -f6)
+        timeout 30 runuser -u "$user" -- env -i HOME="$home" USER="$user" LOGNAME="$user" \
+            PATH=/usr/bin:/bin XDG_RUNTIME_DIR="/run/user/$uid" \
+            DBUS_SESSION_BUS_ADDRESS="unix:path=$bus" \
+            /usr/bin/cinnarchy reset >/dev/null 2>&1 || true
+    done
+fi
+"""
+
+
 def run(*args, **kw):
     return subprocess.run(list(args), check=True, **kw)
 
@@ -152,6 +176,8 @@ def package_app():
                                 qt_runtime_depends() | set(RUNTIME_DEPENDS))
         size = sum(p.stat().st_size for p in stage.rglob('*') if p.is_file()) // 1024
         (stage / 'DEBIAN').mkdir()
+        (stage / 'DEBIAN/prerm').write_text(PRERM)
+        (stage / 'DEBIAN/prerm').chmod(0o755)
         (stage / 'DEBIAN/control').write_text(f"""Package: cinnarchy
 Version: {ver}-{DEB_REVISION}
 Architecture: amd64

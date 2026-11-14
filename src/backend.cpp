@@ -562,6 +562,29 @@ bool Backend::restoreNow() {
     if(!commit(target)) {m_original=oldOriginal;m_undo=oldUndo;m_redo=oldRedo;emit stateChanged();return false;}
     m_error=false;m_message=tr("Restored the setup from before your first switch.");emit stateChanged();return true;
 }
+bool Backend::resetNow() {
+    const auto inUse=[this]{
+        for(const auto &key:managed.mid(0,3)) // the desktop, application and window-border themes
+            if(unquote(m_store->read(key.first,key.second)).startsWith("Omarchy-"))return true;
+        return currentConfiguration().value("active").toBool()
+            ||QUrl(unquote(m_store->read(bg,"picture-uri"))).toLocalFile().startsWith(m_paths.stateRoot+"/");
+    };
+    bool done=true;
+    if(hasOriginal())done=restoreNow();
+    if(done&&inUse()) {
+        // Nothing saved to go back to, or it was an Omarchy look itself.
+        QJsonArray defaults;
+        for(const auto &key:managed)if(m_store->writable(key.first,key.second))
+            defaults.append(QJsonObject{{"schema",key.first},{"key",key.second},{"value",m_store->defaultValue(key.first,key.second)}});
+        defaults.append(QJsonObject{{"schema","cinnarchy.wallpaper"},{"key","configuration"},{"value","{}"}});
+        const auto oldUndo=m_undo,oldRedo=m_redo;m_undo.append(snapshot());m_redo={};
+        done=commit(defaults);
+        if(!done){m_undo=oldUndo;m_redo=oldRedo;}
+    }
+    if(!done){emit stateChanged();return false;}
+    Wallpapers::listDesktopHandler(*m_store,false);
+    m_error=false;m_message=tr("The desktop is back to how it was without Cinnarchy.");emit stateChanged();return true;
+}
 void Backend::schedule(const std::function<bool()> &action) {
     if(m_busy) return;
     m_busy=true;emit stateChanged();

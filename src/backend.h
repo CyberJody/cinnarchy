@@ -122,6 +122,9 @@ public:
     Q_INVOKABLE bool undoNow();
     Q_INVOKABLE bool redoNow();
     Q_INVOKABLE bool restoreNow();
+    // Leaves the desktop without the picker: the setup from before the first switch, or the
+    // system's own defaults when no record of it is left. Run when the package is removed.
+    bool resetNow();
     QJsonArray snapshot() const;
     QJsonObject status() const;
 signals:

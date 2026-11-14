@@ -34,6 +34,10 @@ desktop.parent.mkdir(parents=True, exist_ok=True)
 text = (root / 'pkgbuild/cinnarchy.desktop').read_text()
 installed_binary = str(Path.home() / '.local/bin/cinnarchy').replace('\\', '\\\\').replace('"', '\\"')
 text = text.replace('Exec=cinnarchy open', f'Exec="{installed_binary}" open')
+# The launcher names its icon file: Cinnamon's menu shows a generic gear for a
+# newly installed launcher whose icon it has to look up by name.
+icon = data / 'icons/hicolor/scalable/apps/cinnarchy.svg'
+text = text.replace('Icon=/usr/share/icons/hicolor/scalable/apps/cinnarchy.svg', f'Icon={icon}')
 fd, stage = tempfile.mkstemp(prefix='.cinnarchy-', dir=desktop.parent)
 with os.fdopen(fd, 'w') as stream:
     stream.write(text)

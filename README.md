@@ -16,7 +16,9 @@ Omarchy, Basecamp or Linux Mint.
 
 ## Install
 
-Cinnarchy is for the **Cinnamon** desktop.
+Cinnarchy is for the **Cinnamon** desktop, in its regular (X11) session. That
+is what Linux Mint and LMDE start by default. Cinnamon's experimental Wayland
+session is not supported. The picker needs a screen of 1024×768 or larger.
 
 **1. Download the installer for your system.**
 
@@ -28,6 +30,11 @@ Cinnarchy is for the **Cinnamon** desktop.
 Not sure which you have? Open the menu, type **System Info** and look at the
 first line.
 
+The second installer is built and tested on Debian 13. LMDE 7 is based on
+Debian 13, so it should work there too, but it has **not been tested on LMDE
+itself** yet. If you try it on LMDE, please
+[report how it went](https://github.com/CyberJody/cinnarchy/issues).
+
 **2. Open the downloaded file.** It is in your Downloads folder; double-click
 it and the package installer opens.
 
@@ -37,8 +44,32 @@ may list a few extra packages it needs; that is expected.
 **4. Open the menu and start Omarchy Theme Picker.** Pick a theme and click
 **Apply full theme**. **Restore original** brings back the look you had before.
 
-To update, download and install the newest installer the same way. To remove
-it, uninstall **cinnarchy** in Software Manager, or run `sudo apt remove cinnarchy`.
+To update, download and install the newest installer the same way. Your theme
+and backgrounds stay as they are.
+
+**If the installer says "Failed to download package files":** your Internet
+connection is most likely fine. On a new Linux Mint installation the list of
+available software is out of date until Update Manager has refreshed it once.
+Open **Update Manager** from the menu, click **OK** on its welcome screen,
+click **Refresh**, and then open the Cinnarchy installer again.
+
+### Remove
+
+Right-click **Omarchy Theme Picker** in the menu and choose **Uninstall**, or
+run `sudo apt remove cinnarchy`.
+Removing Cinnarchy puts your desktop back the way it was before you first
+applied a theme: theme, icons and background return, animated backgrounds stop
+and nothing is left to start at login. If Cinnarchy has no record of your
+earlier setup, you get your system's default look instead.
+
+This happens for whoever is logged in when Cinnarchy is removed. On a computer
+with several accounts, the others should click **Restore original** first.
+If you installed Cinnarchy another way than with these installers, run
+`cinnarchy reset` before removing it.
+
+Themes and backgrounds you downloaded are kept, as your own files. To delete
+them too, remove `~/.config/omarchy/themes`, `~/.local/state/cinnarchy` and
+the `Omarchy-…` folders in `~/.themes`.
 
 The Linux Mint 22 installer also works on Ubuntu 24.04 with Cinnamon. Linux
 Mint 21 and older are not supported. From a terminal, the same install is
@@ -155,8 +186,8 @@ theme's icon choice are embedded in the binary; themes are installed into
 the picker (`cinnarchy fetch --backgrounds` on the command line).
 
 Developed and tested in X11 sessions on two systems: Cinnamon 6.6 with Qt 6.12,
-and Debian 13 with Cinnamon 6.4 and Qt 6.8. The Debian steps below also apply
-to LMDE 7, which shares Debian 13's packages.
+and Debian 13 with Cinnamon 6.4 and Qt 6.8. The Debian steps below should also
+apply to LMDE 7, which shares Debian 13's packages, but LMDE itself is untested.
 
 ```sh
 git clone https://github.com/CyberJody/cinnarchy.git
@@ -170,7 +201,7 @@ python3 tests/gtk_desktop_regression.py
 The user installer places the binary in `~/.local/bin/cinnarchy`, with a
 Cinnamon menu entry and icon under your user data directory. It does not
 require administrator access. For an Arch package, `./bin/package` creates
-`pkgbuild/cinnarchy-1.3.1-1-x86_64.pkg.tar.zst`; `./bin/install` builds and
+`pkgbuild/cinnarchy-1.3.2-1-x86_64.pkg.tar.zst`; `./bin/install` builds and
 installs it through makepkg/pacman.
 
 ### Debian 13 (trixie)
@@ -238,6 +269,7 @@ cinnarchy stop-animation --json
 cinnarchy undo --json
 cinnarchy redo --json
 cinnarchy restore --json
+cinnarchy reset --json              # as restore, or the system defaults; run on removal
 cinnarchy skill install
 ```
 

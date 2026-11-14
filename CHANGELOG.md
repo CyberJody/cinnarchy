@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.2 — 2026-11-14
+
+- Removing Cinnarchy now puts the desktop back. The installer packages restore
+  the setup from before the first theme was applied, stop animated
+  backgrounds and remove the login entry, for whoever is logged in. Before,
+  an uninstall left the Omarchy look in place with nothing to change it back.
+  Without a saved setup the system's default look is used. `cinnarchy reset`
+  does the same by hand.
+- The menu shows Cinnarchy's own icon right after installing. Cinnamon showed
+  a generic gear until the next login.
+- The install instructions cover the "Failed to download package files"
+  message on a new Linux Mint installation, and state what Cinnarchy needs:
+  Cinnamon's regular X11 session and a screen of 1024×768 or larger. Wayland
+  sessions are not supported. They also say that the Debian 13 installer has
+  not been tested on LMDE 7 itself.
+
 ## 1.3.1 — 2026-11-12
 
 - Animated backgrounds now come back after logging in even when the desktop is

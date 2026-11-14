@@ -23,6 +23,8 @@ to leave static poster images. Normal Cinnamon background changes stop playback.
 
 Use `cinnarchy undo --json`, `cinnarchy redo --json`, or `cinnarchy restore --json`
 when the user requests the previous setup or the setup from before their first switch.
+Use `cinnarchy reset --json` before Cinnarchy is uninstalled: like restore, and when
+no earlier setup is saved it returns the system's default look.
 Every change is saved for recovery. Report errors; never edit packaged Omarchy files.
 
 When the user wants new Omarchy themes, run `cinnarchy fetch --json`; it downloads

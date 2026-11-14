@@ -161,6 +161,16 @@ QJsonObject Wallpapers::prepare(const QVariantList &screens,const QJsonObject &a
         {"poster",QUrl::fromLocalFile(path).toString(QUrl::FullyEncoded)},{"option","spanned"},{"spanning",spanning},{"assignments",assignments},{"screens",QJsonArray::fromVariantList(screens)}};
 }
 QString Wallpapers::configurationPath(const QString &root){return root+"/wallpaper.json";}
+void Wallpapers::listDesktopHandler(SettingsStore &settings,bool listed) {
+    const QString schema="org.nemo.desktop",key="ignored-desktop-handlers",ours="CinnarchyWallpaper";
+    const auto current=settings.read(schema,key);
+    if(current.isEmpty()||current.contains(ours,Qt::CaseInsensitive)==listed)return;
+    QStringList items;auto it=QRegularExpression("'((?:[^'\\\\]|\\\\.)*)'").globalMatch(current);
+    while(it.hasNext()){const auto item=it.next().captured(1);if(item.compare(ours,Qt::CaseInsensitive)!=0)items<<"'"+item+"'";}
+    if(listed)items<<"'"+ours+"'";
+    QString ignored;
+    if(settings.write(schema,key,"["+items.join(", ")+"]",ignored))settings.sync();
+}
 QString Wallpapers::socketPath(const QString &root){
     const auto key=QCryptographicHash::hash(QDir(root).absolutePath().toUtf8(),QCryptographicHash::Sha256).toHex().left(20);
     return QDir::tempPath()+"/cinnarchy-"+QString::number(getuid())+"/"+QString::fromLatin1(key)+".sock";
@@ -233,17 +243,6 @@ class DesktopService:public QObject {
     // Cinnamon redirects a window into its compositor when it starts managing
     // it. A player that renders before then can stay invisible, so wait for
     // the window manager's WM_STATE (at most 1.5 s).
-    // Nemo will not draw desktop icons while another program has a desktop
-    // window, unless its WM_CLASS is listed in ignored-desktop-handlers.
-    void allowDesktopIcons() {
-        const QString schema="org.nemo.desktop",key="ignored-desktop-handlers";
-        const auto current=settings->read(schema,key);
-        if(current.isEmpty()||current.contains("cinnarchywallpaper",Qt::CaseInsensitive))return;
-        QStringList items;auto it=QRegularExpression("'((?:[^'\\\\]|\\\\.)*)'").globalMatch(current);
-        while(it.hasNext())items<<"'"+it.next().captured(1)+"'";
-        items<<"'CinnarchyWallpaper'";QString ignored;
-        if(settings->write(schema,key,"["+items.join(", ")+"]",ignored))settings->sync();
-    }
     void waitUntilManaged(Window window) {
         const Atom state=XInternAtom(display,"WM_STATE",False);QElapsedTimer wait;wait.start();
         while(wait.elapsed()<1500) {
@@ -343,7 +342,7 @@ public:
                 client->write(QJsonDocument(QJsonObject{{"ok",error.isEmpty()},{"error",error},{"players",int(windows.size())},{"active",config.value("active")},{"version",QCoreApplication::applicationVersion()}}).toJson(QJsonDocument::Compact)+'\n');client->flush();client->disconnectFromServer();
             });connect(client,&QLocalSocket::disconnected,client,&QObject::deleteLater);
         }});
-        allowDesktopIcons();
+        Wallpapers::listDesktopHandler(*settings,true);
         load();poll.setInterval(400);connect(&poll,&QTimer::timeout,this,[this]{
             load();
             if(!config.value("active").toBool()){QCoreApplication::quit();return;}

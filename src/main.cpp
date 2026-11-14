@@ -24,12 +24,12 @@ int main(int argc,char **argv) {
     const bool gui=raw.isEmpty() || raw.first()=="open" || raw.first()=="wallpaper-service";
     if(!gui) {qputenv("QT_QPA_PLATFORM","offscreen");qputenv("QT_QUICK_BACKEND","software");}
     QGuiApplication app(argc,argv);
-    app.setApplicationName("cinnarchy");app.setApplicationVersion("1.3.1");app.setOrganizationName("Cinnarchy");
+    app.setApplicationName("cinnarchy");app.setApplicationVersion("1.3.2");app.setOrganizationName("Cinnarchy");
     app.setDesktopFileName("cinnarchy");app.setWindowIcon(QIcon(":/cinnarchy.svg"));
     QQuickStyle::setStyle("Material");
     QCommandLineParser parser;
     parser.setApplicationDescription("Omarchy Theme Picker for Cinnamon");parser.addHelpOption();parser.addVersionOption();
-    parser.addPositionalArgument("command","open, list, status, check, apply SLUG, fetch, undo, redo, restore, pause, stop-animation, screenshot, skill install","[command] [slug]");
+    parser.addPositionalArgument("command","open, list, status, check, apply SLUG, fetch, undo, redo, restore, reset, pause, stop-animation, screenshot, skill install","[command] [slug]");
     parser.addOption({"json","Write machine-readable output"});
     parser.addOption({"select","Select a theme in the picker","slug"});
     parser.addOption({"background","Choose a background by its 1-based index","number","1"});
@@ -111,7 +111,7 @@ int main(int argc,char **argv) {
         const bool ready=!backend.themes().isEmpty() && missing.isEmpty() && !backend.snapshot().isEmpty();
         print(QJsonObject{{"ok",ready},{"themes",backend.themes().size()},{"missingBackgrounds",missing}});return ready?0:1;
     }
-    if(command=="apply" || command=="undo" || command=="redo" || command=="restore" || command=="pause" || command=="stop-animation") {
+    if(command=="apply" || command=="undo" || command=="redo" || command=="restore" || command=="reset" || command=="pause" || command=="stop-animation") {
         bool success=false;
         if(command=="apply") {
             const auto slug=args.value(1);
@@ -139,6 +139,7 @@ int main(int argc,char **argv) {
         else if(command=="redo") success=backend.redoNow();
         else if(command=="pause"){backend.pauseAnimations();success=!backend.error();}
         else if(command=="stop-animation"){backend.useSystemWallpaper();success=!backend.error();}
+        else if(command=="reset") success=backend.resetNow();
         else success=backend.restoreNow();
         print(backend.status());if(!success) std::fprintf(stderr,"%s\n",backend.message().isEmpty()?"No saved setup is available":backend.message().toUtf8().constData());return success?0:1;
     }

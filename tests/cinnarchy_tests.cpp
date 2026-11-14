@@ -36,6 +36,8 @@ public:
     bool has(const QString&s,const QString&k) const override{return values.contains(s+"/"+k);}
     bool writable(const QString&s,const QString&k) const override{return has(s,k)&&!locked.contains(s+"/"+k);}
     QString read(const QString&s,const QString&k) const override{return values.value(s+"/"+k);}
+    QMap<QString,QString> defaults; // what the system ships; a key not listed keeps its starting value
+    QString defaultValue(const QString&s,const QString&k) const override{return defaults.value(s+"/"+k,FakeSettings().values.value(s+"/"+k));}
     bool write(const QString&s,const QString&k,const QString&v,QString&e) override {
         if(++writes==failAt) {failAt=-1;e="Injected settings failure";return false;}
         if(!writable(s,k)){e="Locked";return false;}values[s+"/"+k]=v;return true;
@@ -420,6 +422,31 @@ private slots:
         {Backend b(nullptr,f.paths,&f.settings);b.selectTheme("nord");b.selectWallpaper(1);QVERIFY(b.applyNow());}
         Backend b(nullptr,f.paths,&f.settings);QVERIFY(b.canUndo());QCOMPARE(b.wallpaperIndex(),1);
         QVERIFY(b.restoreNow());QCOMPARE(f.settings.values,original);
+    }
+    void resetReturnsTheSetupFromBeforeThePicker() {
+        Fixture f;f.settings.values["org.nemo.desktop/ignored-desktop-handlers"]="['conky', 'csd-background']";
+        const auto original=f.settings.values;Backend b(nullptr,f.paths,&f.settings);
+        QVERIFY(b.resetNow());QCOMPARE(f.settings.values,original); // nothing applied: nothing changes
+        b.selectTheme("nord");b.selectWallpaper(1);QVERIFY(b.applyNow());
+        Wallpapers::listDesktopHandler(f.settings,true); // as the wallpaper player does
+        QCOMPARE(f.settings.read("org.nemo.desktop","ignored-desktop-handlers"),QString("['conky', 'csd-background', 'CinnarchyWallpaper']"));
+        QVERIFY(b.resetNow());QCOMPARE(f.settings.values,original);QVERIFY(!b.hasOriginal());
+    }
+    void resetFallsBackToSystemDefaultsWithoutASavedSetup() {
+        Fixture f;const auto start=f.settings.values;
+        f.settings.defaults={{"org.cinnamon.theme/name","'Mint-Y-Dark-Aqua'"},{"org.cinnamon.desktop.interface/gtk-theme","'Mint-Y-Aqua'"},
+            {"org.cinnamon.desktop.background/picture-uri","'file:///usr/share/backgrounds/default.jpg'"}};
+        {Backend b(nullptr,f.paths,&f.settings);b.selectTheme("nord");b.selectWallpaper(1);QVERIFY(b.applyNow());
+            // Restore forgets the saved setup; Undo then brings the Omarchy look back without one.
+            QVERIFY(b.restoreNow());QVERIFY(b.undoNow());QVERIFY(!b.hasOriginal());}
+        QCOMPARE(unquote(f.settings.read("org.cinnamon.theme","name")),QString("Omarchy-nord"));
+        Backend b(nullptr,f.paths,&f.settings);QVERIFY(b.resetNow());
+        QCOMPARE(unquote(f.settings.read("org.cinnamon.theme","name")),QString("Mint-Y-Dark-Aqua"));
+        QCOMPARE(unquote(f.settings.read("org.cinnamon.desktop.interface","gtk-theme")),QString("Mint-Y-Aqua"));
+        QCOMPARE(unquote(f.settings.read("org.cinnamon.desktop.wm.preferences","theme")),QString("Adwaita"));
+        QCOMPARE(unquote(f.settings.read("org.cinnamon.desktop.background","picture-uri")),QString("file:///usr/share/backgrounds/default.jpg"));
+        QCOMPARE(f.settings.read("org.cinnamon.desktop.interface","icon-theme"),start.value("org.cinnamon.desktop.interface/icon-theme"));
+        QVERIFY(b.canUndo()); // the Omarchy look can still be brought back
     }
     void rollbackAfterPartialFailure() {
         Fixture f;const auto original=f.settings.values;Backend b(nullptr,f.paths,&f.settings);

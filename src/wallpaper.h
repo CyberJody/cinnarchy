@@ -53,6 +53,9 @@ public:
     static QJsonObject player(const QString &socket,const QJsonArray &command,int timeout=500);
     static QString configurationPath(const QString &stateRoot);
     static QString socketPath(const QString &stateRoot);
+    // Nemo will not draw desktop icons while another program has a desktop window,
+    // unless its WM_CLASS is in ignored-desktop-handlers. Lists the player's, or takes it out.
+    static void listDesktopHandler(SettingsStore &settings,bool listed);
 };
 
 int runWallpaperService(const QString &stateRoot);
